@@ -54,6 +54,22 @@ double circle_positions[180][2] = {};
 int position_index = 0;
 int total_positions = 180;
 
+
+//configures the parameters of the ftm protocol
+void configureFtm(FtmParams &ftm_params){
+  ftm_params.SetStatusIndication(FtmParams::RESERVED);
+  ftm_params.SetStatusIndicationValue(0);
+  ftm_params.SetNumberOfBurstsExponent(2); //4 bursts
+  ftm_params.SetBurstDuration(9); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
+
+  ftm_params.SetMinDeltaFtm(1); //100 us between frames
+  ftm_params.SetPartialTsfNoPref(true);
+  ftm_params.SetAsap(true);
+  ftm_params.SetFtmsPerBurst(20);
+
+  ftm_params.SetBurstPeriod(10); //1000 ms between burst periods
+}
+
 void SessionOver (FtmSession session)
 {
   //NS_LOG_UNCOND ("RTT: " << session.GetMeanRTT ());
@@ -134,17 +150,7 @@ static void GenerateTraffic (Ptr<WifiNetDevice> ap, Ptr<WifiNetDevice> sta, Addr
 
   //create the parameter for this session and set them
   FtmParams ftm_params;
-  ftm_params.SetStatusIndication(FtmParams::RESERVED);
-  ftm_params.SetStatusIndicationValue(0);
-  ftm_params.SetNumberOfBurstsExponent(2); //4 bursts
-  ftm_params.SetBurstDuration(9); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
-
-  ftm_params.SetMinDeltaFtm(1); //100 us between frames
-  ftm_params.SetPartialTsfNoPref(true);
-  ftm_params.SetAsap(true);
-  ftm_params.SetFtmsPerBurst(20);
-
-  ftm_params.SetBurstPeriod(10); //1000 ms between burst periods
+  configureFtm(ftm_params);
   session->SetFtmParams(ftm_params);
 
   session->SetSessionOverCallback(MakeCallback(&SessionOver));
