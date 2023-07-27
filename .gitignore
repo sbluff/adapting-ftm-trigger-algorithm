@@ -1,2 +1,13 @@
 *.o
 *.xml
+*.pyc
+*.txt
+
+ns-allinone-3.33-FTM-SigStr/__pycache__/*
+ns-allinone-3.33-FTM-SigStr/bake/*
+ns-allinone-3.33-FTM-SigStr/netanim-3.108/*
+ns-allinone-3.33-FTM-SigStr/ns-3.33/__pycache__/*
+ns-allinone-3.33-FTM-SigStr/ns-3.33/bindings/*
+ns-allinone-3.33-FTM-SigStr/ns-3.33/build/*
+ns-allinone-3.33-FTM-SigStr/ns-3.33/doc/*
+ns-allinone-3.33-FTM-SigStr/ns-3.33/.*
