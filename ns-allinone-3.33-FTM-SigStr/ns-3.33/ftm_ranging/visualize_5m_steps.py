@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-error_models = ["wired", "wireless", "sig_str", "sig_str_fading"]
+error_models = ["wireless"]
 # rename files to 3 digit size for sorting correctly with 100m
 # import os
 # for curr_error_model in error_models:
@@ -54,5 +54,5 @@ for curr_error_model in error_models:
     plt.grid(linewidth=0.2, alpha=0.25, linestyle='--')
     plt.legend()
     plt.tight_layout()
-    plt.savefig(curr_error_model + ".pdf")
+    plt.savefig("simulations/" + curr_error_model + ".pdf")
     # break
