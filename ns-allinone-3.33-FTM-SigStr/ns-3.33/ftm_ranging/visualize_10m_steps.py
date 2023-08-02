@@ -54,4 +54,5 @@ for curr_error_model in error_models:
     plt.grid(linewidth=0.2, alpha=0.25, linestyle='--')
     plt.legend()
     plt.tight_layout()
-    plt.savefig(curr_error_model + ".pdf")
+    plt.savefig("simulations/" + curr_error_model + "_10m" + ".pdf")
+    print("simulations/" + curr_error_model + "_10m"+ ".pdf")

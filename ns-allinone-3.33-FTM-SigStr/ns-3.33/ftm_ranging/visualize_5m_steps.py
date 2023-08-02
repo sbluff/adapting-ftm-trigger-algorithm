@@ -19,9 +19,13 @@ for curr_error_model in error_models:
     files = files[24:75:5]
     data = np.zeros((len(files) * 14220, 4))
     i = 0
+    print(files)
     for f in files:
+        print(f)
         curr_measurement = np.loadtxt(f)
-        curr_distance = int(f.split('\\')[1][:-1])
+        curr_distance = f.split('/').pop()
+        curr_distance = int(curr_distance.rstrip(curr_distance[-1]))
+        print(curr_distance)
         for m in curr_measurement:
             data[i,0] = m[0] #RTT
             data[i,1] = m[1] #sig_str
@@ -54,5 +58,6 @@ for curr_error_model in error_models:
     plt.grid(linewidth=0.2, alpha=0.25, linestyle='--')
     plt.legend()
     plt.tight_layout()
-    plt.savefig("simulations/" + curr_error_model + ".pdf")
+    plt.savefig("simulations/" + curr_error_model + "_5m" + ".pdf")
+    print("simulations/" + curr_error_model + "_5m"+ ".pdf")
     # break
