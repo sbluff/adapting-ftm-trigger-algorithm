@@ -3,6 +3,10 @@
 *.pyc
 *.txt
 
+ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/sig_str/*
+ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/sig_str_fading/*
+ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/wired/*
+ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/wireless/*
 ns-allinone-3.33-FTM-SigStr/__pycache__/*
 ns-allinone-3.33-FTM-SigStr/bake/*
 ns-allinone-3.33-FTM-SigStr/netanim-3.108/*
