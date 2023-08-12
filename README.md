@@ -2,7 +2,7 @@
 As a part of my thesis in TU Berlin in the TKN department (https://www.tkn.tu-berlin.de/) I will develop an adapting FTM sampling algorithm for the FTM protocol based on the existing project https://github.com/tkn-tub/wifi-ftm-ns3
 
 ## Prerequisites
-python version 3.19.17 or lower
+python version 3.9.17 or lower
 gcc version 11.3.0
 g++ version 11.3.0
 

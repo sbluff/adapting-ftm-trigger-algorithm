@@ -1,0 +1,8 @@
+{
+    "error_models": ["wireless/"],
+    "min_delta_ftm": 1, 
+    "burst_duration": 9,
+    "burst_exponent": 2,
+    "burst_period": 10,
+    "ftm_per_burst": 20
+}

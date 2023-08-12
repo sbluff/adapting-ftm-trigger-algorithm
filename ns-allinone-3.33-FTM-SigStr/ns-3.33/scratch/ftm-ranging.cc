@@ -53,21 +53,22 @@ std::string file_name = "ftm_ranging/tmp.txt";
 double circle_positions[180][2] = {};
 int position_index = 0;
 int total_positions = 180;
+int min_delta_ftm, burst_duration, burst_exponent, burst_period, ftm_per_burst;
 
 
 //configures the parameters of the ftm protocol
 void configureFtm(FtmParams &ftm_params){
   ftm_params.SetStatusIndication(FtmParams::RESERVED);
   ftm_params.SetStatusIndicationValue(0);
-  ftm_params.SetNumberOfBurstsExponent(2); //4 bursts
-  ftm_params.SetBurstDuration(9); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
+  ftm_params.SetNumberOfBurstsExponent(burst_exponent); //4 bursts
+  ftm_params.SetBurstDuration(burst_duration); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
 
-  ftm_params.SetMinDeltaFtm(1); //100 us between frames
+  ftm_params.SetMinDeltaFtm(min_delta_ftm); //100 us between frames
   ftm_params.SetPartialTsfNoPref(true);
   ftm_params.SetAsap(true);
-  ftm_params.SetFtmsPerBurst(20);
+  ftm_params.SetFtmsPerBurst(ftm_per_burst);
 
-  ftm_params.SetBurstPeriod(10); //1000 ms between burst periods
+  ftm_params.SetBurstPeriod(burst_period); //1000 ms between burst periods
 }
 
 void SessionOver (FtmSession session)
@@ -182,6 +183,11 @@ int main (int argc, char *argv[])
   cmd.AddValue ("distance", "Node Distance", distance);
   cmd.AddValue ("error", "Currently Selected Error Mode", selected_error_mode);
   cmd.AddValue ("filename", "Used File Name for Saving", file_name);
+  cmd.AddValue ("min_delta_ftm", "Min Delta FTM", min_delta_ftm);
+  cmd.AddValue ("burst_duration", "Burst Duration", burst_duration);
+  cmd.AddValue ("burst_exponent", "Burst Exponent", burst_exponent);
+  cmd.AddValue ("burst_period", "Burst Period", burst_period);
+  cmd.AddValue ("ftm_per_burst", "FTM per burst", ftm_per_burst);
   cmd.Parse (argc, argv);
 
   generateCirclePositions(distance);
@@ -272,7 +278,7 @@ int main (int argc, char *argv[])
   //load FTM map for usage
   map = CreateObject<WirelessFtmErrorModel::FtmMap> ();
   if (selected_error_mode != 0) {
-      map->LoadMap ("src/wifi/ftm_map/dim_202.map");
+      map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error.map");
   }
   //set FTM map through attribute system
 //  Config::SetDefault ("ns3::WirelessFtmErrorModel::FtmMap", PointerValue (map));

@@ -2,6 +2,7 @@
 *.xml
 *.pyc
 *.txt
+!tmp.txt
 
 ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/sig_str/*
 ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/sig_str_fading/*
