@@ -3,7 +3,11 @@
 *.pyc
 *.txt
 !tmp.txt
+!*.pdf
+!simulation_parameters.json
 
+ns-allinone-3.33-FTM-SigStr/ns-3.33/src/wifi/ftm_map/*.map
+ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/simulations/*
 ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/sig_str/*
 ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/sig_str_fading/*
 ns-allinone-3.33-FTM-SigStr/ns-3.33/ftm_ranging/wired/*
