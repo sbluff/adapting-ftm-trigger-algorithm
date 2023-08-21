@@ -20,7 +20,7 @@ def file_is_empty(filename):
 params = dict(min_delta_ftm=0, burst_duration=0, burst_exponent=0, burst_period=0, ftm_per_burst=0)
 f = open('./simulations/simulation_parameters.json')
 data = json.load(f)
-params['error_models'] = data['error_models']
+params['error_models'] = ['wireless']
 params['burst_duration'] = data['burst_duration']
 params['burst_period'] = data['burst_period']
 params['burst_exponent'] = data['burst_exponent']
@@ -29,7 +29,6 @@ params['ftm_per_burst'] = data['ftm_per_burst']
 
 for curr_error_model in error_models:
     files = sorted(glob.glob('simulations/' + str(params['min_delta_ftm']) + '-' + str(params['burst_duration']) + '-' + str(params['burst_exponent']) + '-'  + str(params['burst_period']) + '-' + str(params['ftm_per_burst']) + "/*m"))
-    print(files)
     files = files[25:75+1:5]
     data = np.zeros((len(files) * 17820, 4))
     i = 0

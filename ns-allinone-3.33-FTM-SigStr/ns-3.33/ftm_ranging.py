@@ -3,10 +3,11 @@ import subprocess
 import time
 import numpy as np
 import json
+import os
 
 f = open('./ftm_ranging/simulations/simulation_parameters.json')
 data = json.load(f)
-error_models = data['error_models']
+error_models = ['wireless']
 burst_duration = data['burst_duration']
 burst_period = data['burst_period']
 burst_exponent = data['burst_exponent']
@@ -19,7 +20,14 @@ def performTests():
     for curr_error_model in error_models:
         for curr_dist in range(1, 101):
             print(curr_error_model, curr_dist, "m")
-            output = './' + results_path
+            output = results_path
+            #¢reate folder if it doesnt exist
+            try: 
+                os.mkdir(output) 
+            except OSError as error: 
+                print(error)
+            
+            #compose file name      
             if curr_dist < 10:
                 output += "0" + str(curr_dist)
             else:
@@ -27,12 +35,10 @@ def performTests():
             output += "m"
             print(output)
 
-            # create empty output file for ns-3 to append
+            # create empty output file for ns-3 to append if it doesnt exist
             filePath = Path(output)
             filePath.touch(exist_ok= True)
-            curr_file= open(filePath,"w+")
-            
-            # curr_file = open(output, "w+")
+            curr_file= open(filePath,"w+")            
             curr_file.close()
 
             if curr_dist % 5 != 0:
@@ -40,7 +46,7 @@ def performTests():
             
             waf_command = ["--run=ftm-ranging",
                     "--distance=" + str(curr_dist),
-                    "--error=" + str(error_model_index),
+                    "--error=" + '1',
                     "--filename=" + output,
                     "--min_delta_ftm=" + str(min_delta_ftm),
                     "--burst_duration=" + str(burst_duration),
