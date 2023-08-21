@@ -62,6 +62,7 @@ def performTests():
 def main():
     performTests()
     os.system('python3 ./ftm_ranging/visualize_5m_steps.py')
+    os.system('python3 ./ftm_ranging/visualize_10m_steps.py')
 
 if __name__ == "__main__":
     start_time = time.perf_counter()
