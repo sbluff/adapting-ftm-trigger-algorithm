@@ -46,7 +46,7 @@ def performTests():
             
             waf_command = ["--run=ftm-ranging",
                     "--distance=" + str(curr_dist),
-                    "--error=" + '1',
+                    "--error=1",
                     "--filename=" + output,
                     "--min_delta_ftm=" + str(min_delta_ftm),
                     "--burst_duration=" + str(burst_duration),
@@ -54,12 +54,14 @@ def performTests():
                     "--burst_period=" + str(burst_period),
                     "--ftm_per_burst=" + str(ftm_per_burst),
                     ]
+            print(waf_command)
             waf_string = ' '.join(waf_command)
             subprocess.run(["./waf", waf_string])
         error_model_index += 1
 
 def main():
     performTests()
+    os.system('python3 ./ftm_ranging/visualize_5m_steps.py')
 
 if __name__ == "__main__":
     start_time = time.perf_counter()

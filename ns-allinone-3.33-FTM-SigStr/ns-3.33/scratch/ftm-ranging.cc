@@ -48,7 +48,7 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("FtmRanging");
 
-int selected_error_mode = 0; //0: wired, 1: wireless, 2: wireless sig_str, 3: wireless_sig_str with fading
+int selected_error_mode = 1; //0: wired, 1: wireless, 2: wireless sig_str, 3: wireless_sig_str with fading
 std::string file_name = "ftm_ranging/tmp.txt";
 double circle_positions[180][2] = {};
 int position_index = 0;
@@ -189,8 +189,17 @@ int main (int argc, char *argv[])
   cmd.AddValue ("burst_period", "Burst Period", burst_period);
   cmd.AddValue ("ftm_per_burst", "FTM per burst", ftm_per_burst);
   cmd.Parse (argc, argv);
+  std::cout << "distance: " << distance << std::endl;
+  std::cout << "selected_error_mode: " << selected_error_mode << std::endl;
+  std::cout << "file_name: " << file_name << std::endl;
+  std::cout << "min_delta_ftm: " << min_delta_ftm << std::endl;
+  std::cout << "burst_duration: " << burst_duration << std::endl;
+  std::cout << "burst_exponent: " << burst_exponent << std::endl;
+  std::cout << "burst_period: " << burst_period << std::endl;
+  std::cout << "ftm_per_burst: " << ftm_per_burst << std::endl;
 
   generateCirclePositions(distance);
+
 
   //enable FTM through attribute system
   Config::SetDefault ("ns3::RegularWifiMac::FTM_Enabled", BooleanValue(true));
@@ -276,6 +285,7 @@ int main (int argc, char *argv[])
 //  sta_mac->EnableFtm();
 
   //load FTM map for usage
+  std::cout<< "selected_error_mode: " << selected_error_mode << std::endl;
   map = CreateObject<WirelessFtmErrorModel::FtmMap> ();
   if (selected_error_mode != 0) {
       map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error.map");

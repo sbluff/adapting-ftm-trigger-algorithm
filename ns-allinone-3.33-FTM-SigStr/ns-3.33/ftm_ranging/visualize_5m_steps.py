@@ -8,6 +8,8 @@ import json
 
 error_models = ["wireless"]
 
+
+
 def file_is_empty(filename):
     with open(filename)as fin:
         for line in fin:
@@ -27,8 +29,9 @@ params['burst_exponent'] = data['burst_exponent']
 params['min_delta_ftm'] = data['min_delta_ftm']
 params['ftm_per_burst'] = data['ftm_per_burst']
 
+path = "simulations/" + str(params['min_delta_ftm']) + '-' + str(params['burst_duration']) + '-' + str(params['burst_exponent']) + '-'  + str(params['burst_period']) + '-' + str(params['ftm_per_burst']) + '/'
 for curr_error_model in error_models:
-    files = sorted(glob.glob('simulations/' + str(params['min_delta_ftm']) + '-' + str(params['burst_duration']) + '-' + str(params['burst_exponent']) + '-'  + str(params['burst_period']) + '-' + str(params['ftm_per_burst']) + "/*m"))
+    files = sorted(glob.glob('simulations/' + path + "*m"))
     files = files[25:75+1:5]
     data = np.zeros((len(files) * 17820, 4))
     i = 0
@@ -69,8 +72,5 @@ for curr_error_model in error_models:
     plt.grid(linewidth=0.2, alpha=0.25, linestyle='--')
     plt.legend()
     plt.tight_layout() 
-    dir = "simulations/" + str(params['min_delta_ftm']) + '-' + str(params['burst_duration']) + '-' + str(params['burst_exponent']) + '-'  + str(params['burst_period']) + '-' + str(params['ftm_per_burst']) + '/'
-    if (not os.path.isdir(dir)):
-        os.mkdir(dir)
-    plt.savefig(dir + curr_error_model + "_5m" + ".pdf")
+    plt.savefig(path + curr_error_model + "_5m" + ".pdf")
     # break
