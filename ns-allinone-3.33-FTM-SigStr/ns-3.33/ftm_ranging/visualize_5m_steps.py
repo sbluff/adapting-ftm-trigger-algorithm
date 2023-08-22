@@ -29,9 +29,11 @@ params['burst_exponent'] = data['burst_exponent']
 params['min_delta_ftm'] = data['min_delta_ftm']
 params['ftm_per_burst'] = data['ftm_per_burst']
 
+print (params)
+
 path = "simulations/" + str(params['min_delta_ftm']) + '-' + str(params['burst_duration']) + '-' + str(params['burst_exponent']) + '-'  + str(params['burst_period']) + '-' + str(params['ftm_per_burst']) + '/'
 for curr_error_model in error_models:
-    files = sorted(glob.glob('simulations/' + path + "*m"))
+    files = sorted(glob.glob(path + "*m"))
     files = files[25:75+1:5]
     data = np.zeros((len(files) * 17820, 4))
     i = 0
