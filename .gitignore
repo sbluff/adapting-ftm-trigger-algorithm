@@ -2,6 +2,8 @@
 *.xml
 *.pyc
 *.txt
+*.pcap
+*.map
 !tmp.txt
 !*.pdf
 !simulation_parameters.json

@@ -61,6 +61,7 @@ def performTests():
 
 def main():
     performTests()
+    os.system('sudo mv *.pcap ' + results_path)
     os.system('python3 ./ftm_ranging/visualize_5m_steps.py')
     os.system('python3 ./ftm_ranging/visualize_10m_steps.py')
 

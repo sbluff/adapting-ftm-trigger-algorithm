@@ -294,7 +294,7 @@ int main (int argc, char *argv[])
 //  Config::SetDefault ("ns3::WirelessFtmErrorModel::FtmMap", PointerValue (map));
 
   // Tracing
-//  wifiPhy.EnablePcap ("ftm-ranging", devices);
+  wifiPhy.EnablePcap ("ftm-ranging", devices);
 
   Simulator::ScheduleNow (&GenerateTraffic, wifi_ap, wifi_sta, recvAddr);
 
