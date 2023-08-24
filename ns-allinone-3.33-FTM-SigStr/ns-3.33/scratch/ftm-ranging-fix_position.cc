@@ -42,6 +42,11 @@
 #include "ns3/mgt-headers.h"
 #include "ns3/ftm-error-model.h"
 #include "ns3/pointer.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 
 using namespace ns3;
@@ -73,7 +78,14 @@ void configureFtm(FtmParams &ftm_params){
 
 void SessionOver (FtmSession session)
 {
-  file_name = "./ftm_ranging/simulations/fix_position/" + std::to_string(int(min_delta_ftm)) + '-' + std::to_string(int(burst_duration)) + '-' + std::to_string(int(burst_exponent)) + '-' + std::to_string(int(burst_period)) + '-' + std::to_string(int(ftm_per_burst)) + '/' + std::to_string(int(distance)) + 'm';
+  std::string file_path = "./ftm_ranging/simulations/fix_position/" + std::to_string(int(min_delta_ftm)) + '-' + std::to_string(int(burst_duration)) + '-' + std::to_string(int(burst_exponent)) + '-' + std::to_string(int(burst_period)) + '-' + std::to_string(int(ftm_per_burst)) + '/';
+  file_name =  file_path + std::to_string(int(distance)) + 'm';
+  std::cout << file_name << std::endl;
+
+  //create folder for files
+  const char* str = file_path.c_str();
+  mkdir(str ,0777);
+
   std::list<int64_t> rtts = session.GetIndividualRTT();
   std::list<double> sig_strs = session.GetIndividualSignalStrength();
 
@@ -164,9 +176,9 @@ int main (int argc, char *argv[])
   selected_error_mode = 1;
   min_delta_ftm = 15;
   burst_duration = 10;
-  burst_exponent = 1;
+  burst_exponent = 2;
   burst_period = 10;
-  ftm_per_burst = 3;
+  ftm_per_burst = 1;
   distance = 1;
   selected_error_mode = 1;
   ///////// PARAMETERS
