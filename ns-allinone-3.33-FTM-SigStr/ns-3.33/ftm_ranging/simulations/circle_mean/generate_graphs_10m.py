@@ -15,7 +15,7 @@ for parameter_config in parameters_configuration:
     parameters = parameters.split('-')
     path = str(parameters[0]) +  '-' + str(parameters[1]) + '-' + str(parameters[2]) + '-' + str(parameters[3]) + '-' + str(parameters[4])
     df = pd.read_csv('../meassurements.csv')
-    df = df.loc[(df.meassurement_type == "fix_position") & (df.min_delta_ftm == int(parameters[0])) & (df.burst_period == int(parameters[1])) & (df.burst_exponent == int(parameters[2])) & (df.burst_duration == int(parameters[3])) & (df.ftm_per_burst == int(parameters[4]))]
+    df = df.loc[(df.meassurement_type == "circle_mean") & (df.min_delta_ftm == int(parameters[0])) & (df.burst_period == int(parameters[1])) & (df.burst_exponent == int(parameters[2])) & (df.burst_duration == int(parameters[3])) & (df.ftm_per_burst == int(parameters[4]))]
     if len(df.index) != 0:
         boxplot = df.boxplot(by ='real_distance', column =['meassured_distance'], grid = True)
         boxplot.set_title(parameters[0] + '-'  + parameters[1] + '-' + parameters[2] + '-'  + parameters[3] + '-'  + parameters[4])

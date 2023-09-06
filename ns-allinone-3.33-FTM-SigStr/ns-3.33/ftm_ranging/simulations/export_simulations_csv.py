@@ -28,11 +28,12 @@ with open('./meassurements.csv', 'w', newline='') as csvfile:
             parameters = parameters.split('-')
             files = sorted(glob.glob(parameter_config + "/*m"))
             for file in files:
+                print(file)
                 curr_distance = int(file.split('/').pop().rstrip(file.split('/').pop()[-1]))
                 if not file_is_empty(file):
                     curr_measurement = np.loadtxt(file)
                     for m in curr_measurement:
-                        value = m[0] / 2 / 1000 * 0.3
+                        value = int(m[0]) / 2 / (10000 * 0.3)
                         writer.writerow({'real_distance': curr_distance, 'meassured_distance': value, 'meassurement_type': meassurment_type, 'min_delta_ftm': parameters[0],'burst_period': parameters[1],'burst_exponent': parameters[2],'burst_duration': parameters[3],'ftm_per_burst':parameters[4], 'error': value-curr_distance})
 
 print("Data exported correctly!")
