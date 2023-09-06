@@ -16,7 +16,7 @@ def file_is_empty(filename):
     return True
 
 with open('./meassurements.csv', 'w', newline='') as csvfile:
-    fieldnames = ['real_distance','meassured_distance','meassurement_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst']
+    fieldnames = ['real_distance','meassured_distance','meassurement_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     subfolders = [ f.path for f in os.scandir('./') if f.is_dir() ]
@@ -33,7 +33,7 @@ with open('./meassurements.csv', 'w', newline='') as csvfile:
                     curr_measurement = np.loadtxt(file)
                     for m in curr_measurement:
                         value = m[0] / 2 / 1000 * 0.3
-                        writer.writerow({'real_distance': curr_distance, 'meassured_distance': value, 'meassurement_type': meassurment_type, 'min_delta_ftm': parameters[0],'burst_period': parameters[1],'burst_exponent': parameters[2],'burst_duration': parameters[3],'ftm_per_burst':parameters[4]})
+                        writer.writerow({'real_distance': curr_distance, 'meassured_distance': value, 'meassurement_type': meassurment_type, 'min_delta_ftm': parameters[0],'burst_period': parameters[1],'burst_exponent': parameters[2],'burst_duration': parameters[3],'ftm_per_burst':parameters[4], 'error': value-curr_distance})
 
 print("Data exported correctly!")
             
