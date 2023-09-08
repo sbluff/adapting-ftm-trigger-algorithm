@@ -7,13 +7,14 @@ import os
 
 f = open('./ftm_ranging/simulations/simulation_parameters.json')
 data = json.load(f)
+simulation_type = data['simulation_type']
 error_models = ['wireless']
 burst_duration = data['burst_duration']
 burst_period = data['burst_period']
 burst_exponent = data['burst_exponent']
 min_delta_ftm = data['min_delta_ftm']
 ftm_per_burst = data['ftm_per_burst']
-results_path = "ftm_ranging/simulations/" + str(min_delta_ftm) + '-' + str(burst_duration) + '-' + str(burst_exponent) + '-'  + str(burst_period) + '-' + str(ftm_per_burst) + '/'
+results_path = "./ftm_ranging/simulations/" + simulation_type + '/' + str(min_delta_ftm) + '-' + str(burst_duration) + '-' + str(burst_exponent) + '-'  + str(burst_period) + '-' + str(ftm_per_burst) + '/'
 
 def performTests():
     error_model_index = 0
@@ -44,7 +45,7 @@ def performTests():
             if curr_dist % 5 != 0:
                 continue
             
-            waf_command = ["--run=ftm-ranging",
+            waf_command = ["--run=ftm-ranging-" + simulation_type,
                     "--distance=" + str(curr_dist),
                     "--error=1",
                     "--filename=" + output,

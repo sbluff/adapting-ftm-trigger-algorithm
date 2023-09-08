@@ -20,6 +20,7 @@ def build(bld):
         'model/steady-state-random-waypoint-mobility-model.cc',
         'model/waypoint.cc',
         'model/waypoint-mobility-model.cc',
+        'model/circle-mobility-model.cc',
         'helper/mobility-helper.cc',
         'helper/ns2-mobility-helper.cc',
         ]
@@ -34,6 +35,7 @@ def build(bld):
         'test/geo-to-cartesian-test.cc',
         'test/rand-cart-around-geo-test.cc',
         'test/box-line-intersection-test.cc',
+        'model/circle-mobility-model.cc',
         ]
 
     # Tests encapsulating example programs should be listed here
@@ -62,6 +64,7 @@ def build(bld):
         'model/steady-state-random-waypoint-mobility-model.h',
         'model/waypoint.h',
         'model/waypoint-mobility-model.h',
+        'model/circle-mobility-model.h',
         'helper/mobility-helper.h',
         'helper/ns2-mobility-helper.h',
         ]

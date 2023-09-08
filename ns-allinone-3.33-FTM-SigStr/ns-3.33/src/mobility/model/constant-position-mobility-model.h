@@ -42,10 +42,10 @@ public:
    */
   ConstantPositionMobilityModel ();
   virtual ~ConstantPositionMobilityModel ();
+  virtual void DoSetPosition (const Vector &position);
+  virtual Vector DoGetPosition (void) const;
 
 private:
-  virtual Vector DoGetPosition (void) const;
-  virtual void DoSetPosition (const Vector &position);
   virtual Vector DoGetVelocity (void) const;
 
   Vector m_position; //!< the constant position
