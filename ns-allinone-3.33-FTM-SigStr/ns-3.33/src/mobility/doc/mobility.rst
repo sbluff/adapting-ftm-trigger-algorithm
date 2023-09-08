@@ -112,6 +112,7 @@ MobilityModel Subclasses
 - RandomWaypoint
 - SteadyStateRandomWaypoint
 - Waypoint
+- CircleMobility
 
 PositionAllocator
 #################
@@ -189,6 +190,15 @@ Scope and Limitations
 =====================
 
 - only cartesian coordinates are presently supported
+
+CircleMobilityModel
+###################
+
+The inspired by ConstantPositionMobilityModel of ns-3 by Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
+and Circle Function Logic of Circle Mobility Model of Omnet++ by Andras Varga.
+
+The position and velocity calculations are inspired from and Circle Function Logic of Circle Mobility Model of Omnet++.
+Omnet++ used radian-degree conversions in its implementation. But here we are doing the angle math in degrees only.
 
 References
 ==========
@@ -429,6 +439,7 @@ Examples
 - main-grid-topology.cc
 - ns2-mobility-trace.cc
 - ns2-bonnmotion.cc
+- ftm-ranging-circle_velocity.cc
 
 Validation
 **********
