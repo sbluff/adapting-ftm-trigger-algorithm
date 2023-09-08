@@ -28,7 +28,7 @@ for simulation in simulation_type:
             df = df.loc[df.real_distance == 20]
             histogram = df['error']
             
-            histogram.plot(kind="hist", bins= 50, title=simulation + ' ' + parameters[0] + '-'  + parameters[1] + '-' + parameters[2] + '-'  + parameters[3] + '-'  + parameters[4])
+            histogram.plot(kind="hist", edgecolor='black', color='purple', bins= 30, title=simulation + ' ' + parameters[0] + '-'  + parameters[1] + '-' + parameters[2] + '-'  + parameters[3] + '-'  + parameters[4])
             plt.savefig('./' + path + '/' + "histogram.pdf")
     
     
