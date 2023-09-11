@@ -55,8 +55,7 @@ NS_LOG_COMPONENT_DEFINE ("FtmRanging");
 
 int selected_error_mode = 1; //0: wired, 1: wireless, 2: wireless sig_str, 3: wireless_sig_str with fading
 int session_counter = 0;
-double circle_positions[180][2] = {};
-int measurements_per_distance = 180;
+int measurements_per_distance = 1000;
 std::string file_name;
 int min_delta_ftm, burst_duration, burst_exponent, burst_period, ftm_per_burst;
 double distance;
@@ -114,28 +113,18 @@ void SessionOver (FtmSession session)
   }
 }
 
-
-void generateCirclePositions(double r)
-{
-  double n = 180;
-  for(int i = 0; i < n; i++) {
-      double x = cos(2 * M_PI / n * i) * r;
-      double y = sin(2 * M_PI / n * i) * r;
-      circle_positions[i][0] = x;
-      circle_positions[i][1] = y;
-  }
-}
-
 void MoveNode(Ptr<Node> sta){
   Ptr<MobilityModel> mobility = sta->GetObject<MobilityModel>();
-  mobility->SetPosition(Vector(circle_positions[session_counter][0], circle_positions[session_counter][1], 0));
+  double x = cos(2 * M_PI / 360 * (session_counter%360)) * distance;
+  double y = sin(2 * M_PI / 360 * (session_counter%360)) * distance; 
+  
+  mobility->SetPosition(Vector(x, y, 0));
 }
 
 Ptr<WirelessFtmErrorModel::FtmMap> map;
 
 static void GenerateTraffic (Ptr<WifiNetDevice> ap, Ptr<WifiNetDevice> sta, Address recvAddr)
 {
-  generateCirclePositions(distance);
   MoveNode(sta->GetNode ());
 
   Ptr<RegularWifiMac> sta_mac = sta->GetMac()->GetObject<RegularWifiMac>();
@@ -238,7 +227,7 @@ int main (int argc, char *argv[])
     Ptr<ConstantPositionMobilityModel> m1 = staticNodesContainer.Get(0)->GetObject<ConstantPositionMobilityModel>();
     Ptr<ConstantPositionMobilityModel> m2 = staticNodesContainer.Get(1)->GetObject<ConstantPositionMobilityModel>();
     m1->DoSetPosition(Vector (0, 0, 0));
-    m2->DoSetPosition(Vector (distance, 0, 0));
+    m2->DoSetPosition(Vector (0, 0, 0));
 
     // END INSTALL MOBILITY MODELS !
 
@@ -308,7 +297,7 @@ int main (int argc, char *argv[])
 
     Simulator::ScheduleNow (&GenerateTraffic, wifi_ap, wifi_sta, recvAddr);
 
-    Simulator::Stop (Seconds (10000.0));
+    Simulator::Stop (Seconds (100000.0));
     Simulator::Run ();
     Simulator::Destroy ();
 
