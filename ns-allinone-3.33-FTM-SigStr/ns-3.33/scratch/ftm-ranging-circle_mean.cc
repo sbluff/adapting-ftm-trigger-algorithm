@@ -42,72 +42,101 @@
 #include "ns3/mgt-headers.h"
 #include "ns3/ftm-error-model.h"
 #include "ns3/pointer.h"
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("FtmRanging");
 
 int selected_error_mode = 1; //0: wired, 1: wireless, 2: wireless sig_str, 3: wireless_sig_str with fading
-std::string file_name = "ftm_ranging/tmp.txt";
+int session_counter = 0;
 double circle_positions[180][2] = {};
-int position_index = 0;
-int total_positions = 180;
+int measurements_per_distance = 180;
+std::string file_name;
 int min_delta_ftm, burst_duration, burst_exponent, burst_period, ftm_per_burst;
+double distance;
 
 
 //configures the parameters of the ftm protocol
 void configureFtm(FtmParams &ftm_params){
   ftm_params.SetStatusIndication(FtmParams::RESERVED);
   ftm_params.SetStatusIndicationValue(0);
-  ftm_params.SetNumberOfBurstsExponent(burst_exponent); //4 bursts
-  ftm_params.SetBurstDuration(burst_duration); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
 
+  //protocol parameters
   ftm_params.SetMinDeltaFtm(min_delta_ftm); //100 us between frames
-  ftm_params.SetPartialTsfNoPref(true);
-  ftm_params.SetAsap(true);
+  ftm_params.SetBurstDuration(burst_duration); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
+  ftm_params.SetNumberOfBurstsExponent(burst_exponent); //4 bursts
+  ftm_params.SetBurstPeriod(burst_period); //1000 ms between burst periods
   ftm_params.SetFtmsPerBurst(ftm_per_burst);
 
-  ftm_params.SetBurstPeriod(burst_period); //1000 ms between burst periods
+  ftm_params.SetPartialTsfNoPref(true);
+  ftm_params.SetAsap(true);
+
 }
 
 void SessionOver (FtmSession session)
 {
-  //NS_LOG_UNCOND ("RTT: " << session.GetMeanRTT ());
-  //std::cout << "Mean RTT: " << session.GetMeanRTT () << std::endl;
-  //std::cout << "Mean Signal Strength: " << session.GetMeanSignalStrength () << std::endl;
-  //std::cout << "Number of Measurements: " << session.GetIndividualRTT().size() << std::endl;
+  std::string file_path = "./ftm_ranging/simulations/circle_mean/" + std::to_string(int(min_delta_ftm)) + '-' + std::to_string(int(burst_duration)) + '-' + std::to_string(int(burst_exponent)) + '-' + std::to_string(int(burst_period)) + '-' + std::to_string(int(ftm_per_burst)) + '/';
+  file_name =  file_path + std::to_string(int(distance)) + 'm';
+  //create folder for files
+  const char* str = file_path.c_str();
+  mkdir(str ,0777);
+
   std::list<int64_t> rtts = session.GetIndividualRTT();
   std::list<double> sig_strs = session.GetIndividualSignalStrength();
 
   std::ofstream output (file_name, std::ofstream::out | std::ofstream::app);
-  while (!rtts.empty())
-    {
-      output << rtts.front() << " " << sig_strs.front() << "\n";
-      rtts.pop_front();
+  int64_t mean_rtt = 0;
+  double mean_sig_str = 0;
+  int count = 0;
+  while (!rtts.empty()){
+      mean_rtt += rtts.front();
+      mean_sig_str += sig_strs.front();
       sig_strs.pop_front();
-    }
+      rtts.pop_front();
+      count++;
+  }
+  mean_rtt = double(mean_rtt / count);
+  mean_sig_str = double(mean_sig_str / count);
+  output << mean_rtt << " " << mean_sig_str << "\n";
+  std::cout << mean_rtt << " " << mean_sig_str << "\n";
   output.close();
+
+  session_counter++;
+  if (session_counter >= measurements_per_distance){
+    session_counter = 0;
+    distance += 10;
+  }
 }
 
-void ChangePosition (Ptr<Node> sta) {
+
+void generateCirclePositions(double r)
+{
+  double n = 180;
+  for(int i = 0; i < n; i++) {
+      double x = cos(2 * M_PI / n * i) * r;
+      double y = sin(2 * M_PI / n * i) * r;
+      circle_positions[i][0] = x;
+      circle_positions[i][1] = y;
+  }
+}
+
+void MoveNode(Ptr<Node> sta){
   Ptr<MobilityModel> mobility = sta->GetObject<MobilityModel>();
-  Vector position = mobility->GetPosition();
-
-  position.x = circle_positions[position_index][0];
-  position.y = circle_positions[position_index][1];
-  position.z = 0;
-
-  position_index++;
-
-  mobility->SetPosition(position);
+  mobility->SetPosition(Vector(circle_positions[session_counter][0], circle_positions[session_counter][1], 0));
 }
 
 Ptr<WirelessFtmErrorModel::FtmMap> map;
 
 static void GenerateTraffic (Ptr<WifiNetDevice> ap, Ptr<WifiNetDevice> sta, Address recvAddr)
 {
-  ChangePosition (sta->GetNode ());
+  generateCirclePositions(distance);
+  MoveNode(sta->GetNode ());
 
   Ptr<RegularWifiMac> sta_mac = sta->GetMac()->GetObject<RegularWifiMac>();
 
@@ -156,154 +185,133 @@ static void GenerateTraffic (Ptr<WifiNetDevice> ap, Ptr<WifiNetDevice> sta, Addr
 
   session->SetSessionOverCallback(MakeCallback(&SessionOver));
   session->SessionBegin();
-
-  if (position_index < total_positions)
-    {
-      Simulator::Schedule(Seconds (5), &GenerateTraffic, ap, sta, recvAddr);
-    }
-}
-
-void generateCirclePositions(double r)
-{
-  double n = 180;
-  for(int i = 0; i < n; i++) {
-      double x = cos(2 * M_PI / n * i) * r;
-      double y = sin(2 * M_PI / n * i) * r;
-      circle_positions[i][0] = x;
-      circle_positions[i][1] = y;
-  }
+  if (int(distance) <= 100)
+    Simulator::Schedule(Seconds (5), &GenerateTraffic, ap, sta, recvAddr);
+  
+    
 }
 
 int main (int argc, char *argv[])
 {
-  //double rss = -80;  // -dBm
-  double distance = 1;
-
-  CommandLine cmd (__FILE__);
-  cmd.AddValue ("distance", "Node Distance", distance);
-  cmd.AddValue ("error", "Currently Selected Error Mode", selected_error_mode);
-  cmd.AddValue ("filename", "Used File Name for Saving", file_name);
-  cmd.AddValue ("min_delta_ftm", "Min Delta FTM", min_delta_ftm);
-  cmd.AddValue ("burst_duration", "Burst Duration", burst_duration);
-  cmd.AddValue ("burst_exponent", "Burst Exponent", burst_exponent);
-  cmd.AddValue ("burst_period", "Burst Period", burst_period);
-  cmd.AddValue ("ftm_per_burst", "FTM per burst", ftm_per_burst);
-  cmd.Parse (argc, argv);
-  std::cout << "distance: " << distance << std::endl;
-  std::cout << "selected_error_mode: " << selected_error_mode << std::endl;
-  std::cout << "file_name: " << file_name << std::endl;
-  std::cout << "min_delta_ftm: " << min_delta_ftm << std::endl;
-  std::cout << "burst_duration: " << burst_duration << std::endl;
-  std::cout << "burst_exponent: " << burst_exponent << std::endl;
-  std::cout << "burst_period: " << burst_period << std::endl;
-  std::cout << "ftm_per_burst: " << ftm_per_burst << std::endl;
-
-  generateCirclePositions(distance);
-
-
-  //enable FTM through attribute system
-  Config::SetDefault ("ns3::RegularWifiMac::FTM_Enabled", BooleanValue(true));
-
-  NodeContainer c;
-  c.Create (2);
-
-  WifiHelper wifi;
-  wifi.SetStandard (WIFI_STANDARD_80211n_2_4GHZ);
-
-  YansWifiPhyHelper wifiPhy;
-  // This is one parameter that matters when using FixedRssLossModel
-  // set it to zero; otherwise, gain will be added
-  wifiPhy.Set ("RxGain", DoubleValue (0) );
-  wifiPhy.Set ("TxPowerStart", DoubleValue(14));
-  wifiPhy.Set ("TxPowerEnd", DoubleValue(14));
-  wifiPhy.Set ("RxSensitivity", DoubleValue(-150));
-  wifiPhy.Set ("CcaEdThreshold", DoubleValue(-150));
-  // ns-3 supports RadioTap and Prism tracing extensions for 802.11b
-  wifiPhy.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
-
-  YansWifiChannelHelper wifiChannel;
-  wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
-
-//  wifiChannel.AddPropagationLoss ("ns3::ThreeGppIndoorOfficePropagationLossModel");
-
-  if (selected_error_mode == 0 || selected_error_mode == 1) {
-      // The below FixedRssLossModel will cause the rss to be fixed regardless
-      // of the distance between the two stations, and the transmit power
-      wifiChannel.AddPropagationLoss ("ns3::FixedRssLossModel","Rss",DoubleValue (-40));
-  }
-  else if (selected_error_mode == 2) {
-      wifiChannel.AddPropagationLoss ("ns3::ThreeLogDistancePropagationLossModel");
-  }
-  else if (selected_error_mode == 3) {
-      wifiChannel.AddPropagationLoss ("ns3::ThreeLogDistancePropagationLossModel");
-      wifiChannel.AddPropagationLoss ("ns3::NakagamiPropagationLossModel");
-  }
-  wifiPhy.SetChannel (wifiChannel.Create ());
-
-  // Add a mac and disable rate control
-  WifiMacHelper wifiMac;
-  wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager");
-
-  // Setup the rest of the mac
-  Ssid ssid = Ssid ("wifi-default");
-  // setup sta.
-  wifiMac.SetType ("ns3::StaWifiMac",
-                   "Ssid", SsidValue (ssid));
-//  wifiMac.SetType ("ns3::StaWifiMac");
-  NetDeviceContainer staDevice = wifi.Install (wifiPhy, wifiMac, c.Get (0));
-  NetDeviceContainer devices = staDevice;
-  // setup ap.
-  wifiMac.SetType ("ns3::ApWifiMac",
-                   "Ssid", SsidValue (ssid));
-  NetDeviceContainer apDevice = wifi.Install (wifiPhy, wifiMac, c.Get (1));
-  devices.Add (apDevice);
-
-  MobilityHelper mobility;
-
-  Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-  positionAlloc->Add (Vector (1, 0, 0));
-  mobility.SetPositionAllocator (positionAlloc);
-  mobility.Install(c.Get (0));
-
-  Ptr<ListPositionAllocator> positionAlloc2 = CreateObject<ListPositionAllocator> ();
-  positionAlloc2->Add (Vector (0.0, 0.0, 0.0));
-  mobility.SetPositionAllocator (positionAlloc2);
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  mobility.Install (c.Get(1));
-
-  Ptr<NetDevice> ap = apDevice.Get(0);
-  Ptr<NetDevice> sta = staDevice.Get(0);
-  Address recvAddr = ap->GetAddress();
-
-  //convert net device to wifi net device
-  Ptr<WifiNetDevice> wifi_ap = ap->GetObject<WifiNetDevice>();
-  Ptr<WifiNetDevice> wifi_sta = sta->GetObject<WifiNetDevice>();
-  //enable FTM through the MAC object
-//  Ptr<RegularWifiMac> ap_mac = wifi_ap->GetMac()->GetObject<RegularWifiMac>();
-//  Ptr<RegularWifiMac> sta_mac = wifi_sta->GetMac()->GetObject<RegularWifiMac>();
-//  ap_mac->EnableFtm();
-//  sta_mac->EnableFtm();
-
-  //load FTM map for usage
-  std::cout<< "selected_error_mode: " << selected_error_mode << std::endl;
+  selected_error_mode = 1;
   map = CreateObject<WirelessFtmErrorModel::FtmMap> ();
   if (selected_error_mode != 0) {
-      map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error.map");
+      map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error_200.map");
   }
-  //set FTM map through attribute system
-//  Config::SetDefault ("ns3::WirelessFtmErrorModel::FtmMap", PointerValue (map));
-
-  // Tracing
-  wifiPhy.EnablePcap ("ftm-ranging", devices);
-
-  Simulator::ScheduleNow (&GenerateTraffic, wifi_ap, wifi_sta, recvAddr);
-
+  std::cout << "Multipath Map loaded!" << std::endl;
   //set time resolution to pico seconds for the time stamps, as default is in nano seconds. IMPORTANT
   Time::SetResolution(Time::PS);
 
-  Simulator::Stop (Seconds (1000.0));
-  Simulator::Run ();
-  Simulator::Destroy ();
+  std::vector<std::vector<int>> configurations; 
+  configurations.push_back({15,10,1,10,2}); 
+  configurations.push_back({15,10,1,10,3}); 
+  configurations.push_back({15,10,1,10,4});   
+  configurations.push_back({15,10,1,10,5});   
+  configurations.push_back({15,10,2,10,2}); 
+  configurations.push_back({15,10,2,10,3}); 
+  configurations.push_back({15,10,2,10,4}); 
+  configurations.push_back({15,10,2,10,5}); 
 
+  for (unsigned i = 0; i < configurations.size(); i++){
+    std::cout << "Configuration: " << i << std::endl;
+    ///////// PARAMETERS
+    min_delta_ftm = configurations[i][0];
+    burst_duration = configurations[i][1];
+    burst_exponent = configurations[i][2];
+    burst_period = configurations[i][3];
+    ftm_per_burst = configurations[i][4];
+    distance = 10;
+
+
+    //enable FTM through attribute system
+    Config::SetDefault ("ns3::RegularWifiMac::FTM_Enabled", BooleanValue(true));
+
+
+    //create nodes
+    NodeContainer staticNodesContainer;
+    staticNodesContainer.Create (2);
+
+    // INSTALL MOBILITY MODELS !
+    MobilityHelper constantPositionMobility;
+    constantPositionMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+    constantPositionMobility.Install (staticNodesContainer);
+    Ptr<ConstantPositionMobilityModel> m1 = staticNodesContainer.Get(0)->GetObject<ConstantPositionMobilityModel>();
+    Ptr<ConstantPositionMobilityModel> m2 = staticNodesContainer.Get(1)->GetObject<ConstantPositionMobilityModel>();
+    m1->DoSetPosition(Vector (0, 0, 0));
+    m2->DoSetPosition(Vector (distance, 0, 0));
+
+    // END INSTALL MOBILITY MODELS !
+
+    WifiHelper wifi;
+    wifi.SetStandard (WIFI_STANDARD_80211n_2_4GHZ);
+
+    YansWifiPhyHelper wifiPhy;
+    // This is one parameter that matters when using FixedRssLossModel
+    // set it to zero; otherwise, gain will be added
+    wifiPhy.Set ("RxGain", DoubleValue (0) );
+    wifiPhy.Set ("TxPowerStart", DoubleValue(14));
+    wifiPhy.Set ("TxPowerEnd", DoubleValue(14));
+    wifiPhy.Set ("RxSensitivity", DoubleValue(-150));
+    wifiPhy.Set ("CcaEdThreshold", DoubleValue(-150));
+    // ns-3 supports RadioTap and Prism tracing extensions for 802.11b
+    wifiPhy.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
+
+    YansWifiChannelHelper wifiChannel;
+    wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
+
+  //  wifiChannel.AddPropagationLoss ("ns3::ThreeGppIndoorOfficePropagationLossModel");
+
+    if (selected_error_mode == 0 || selected_error_mode == 1) {
+        // The below FixedRssLossModel will cause the rss to be fixed regardless
+        // of the distance between the two stations, and the transmit power
+        wifiChannel.AddPropagationLoss ("ns3::FixedRssLossModel","Rss",DoubleValue (-40));
+    }
+    else if (selected_error_mode == 2) {
+        wifiChannel.AddPropagationLoss ("ns3::ThreeLogDistancePropagationLossModel");
+    }
+    else if (selected_error_mode == 3) {
+        wifiChannel.AddPropagationLoss ("ns3::ThreeLogDistancePropagationLossModel");
+        wifiChannel.AddPropagationLoss ("ns3::NakagamiPropagationLossModel");
+    }
+    wifiPhy.SetChannel (wifiChannel.Create ());
+
+    // Add a mac and disable rate control
+    WifiMacHelper wifiMac;
+    wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager");
+
+    // Setup the rest of the mac
+    Ssid ssid = Ssid ("wifi-default");
+    // setup sta.
+    wifiMac.SetType ("ns3::StaWifiMac",
+                    "Ssid", SsidValue (ssid));
+  //  wifiMac.SetType ("ns3::StaWifiMac");
+    NetDeviceContainer staDevice = wifi.Install (wifiPhy, wifiMac, staticNodesContainer.Get (0));
+    NetDeviceContainer devices = staDevice;
+    // setup ap.
+    wifiMac.SetType ("ns3::ApWifiMac",
+                    "Ssid", SsidValue (ssid));
+    NetDeviceContainer apDevice = wifi.Install (wifiPhy, wifiMac, staticNodesContainer.Get (1));
+    devices.Add (apDevice);
+
+
+
+    Ptr<NetDevice> ap = apDevice.Get(0);
+    Ptr<NetDevice> sta = staDevice.Get(0);
+    Address recvAddr = ap->GetAddress();
+
+    //convert net device to wifi net device
+    Ptr<WifiNetDevice> wifi_ap = ap->GetObject<WifiNetDevice>();
+    Ptr<WifiNetDevice> wifi_sta = sta->GetObject<WifiNetDevice>();
+
+    // Tracing
+    wifiPhy.EnablePcap ("ftm-ranging", devices);
+
+    Simulator::ScheduleNow (&GenerateTraffic, wifi_ap, wifi_sta, recvAddr);
+
+    Simulator::Stop (Seconds (10000.0));
+    Simulator::Run ();
+    Simulator::Destroy ();
+
+  } 
   return 0;
 }
