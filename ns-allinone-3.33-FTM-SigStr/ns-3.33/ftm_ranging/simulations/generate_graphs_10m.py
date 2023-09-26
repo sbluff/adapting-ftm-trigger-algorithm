@@ -7,30 +7,56 @@ import pandas as pd
 import seaborn as sns
 import os
 import json
+import matplotlib
 from matplotlib.ticker import FormatStrFormatter
-
 #used for generating graphs
-sampled_distance = 20
+sampled_distance = 5
 
-simulation_type = [ f.path for f in os.scandir('./') if f.is_dir() ]
-for simulation in simulation_type:
-    df = pd.read_csv('./meassurements.csv')
-    df = df.loc[(df.meassurement_type == simulation.replace('./', '')) & (df.real_distance == 20)]
-    print(df.size)
-    df['error'].hist(range=[0,5], edgecolor='black', grid=True, legend=True, by=df['ftm_per_burst'], bins=30)
+matplotlib.style.use('ggplot')
+
+#¢reates histograms comparing ftm_per_burst & burst_size, also creates overlapping histograms
+#simulation_type defines the type of meassurement
+def createComparisonGraphs(simulation_type, df):
+    hist = df
+    ftm_per_burst_values = df['ftm_per_burst'].unique()
+    for value in ftm_per_burst_values:
+        hist = df.loc[(df.ftm_per_burst == value)]
+        hist['error'].hist(range=[0,4], edgecolor='black', grid=True, label=value, bins=20,alpha=0.5)      
     plt.xlabel('Error')
-    plt.ylabel("Frequency");
-    plt.savefig('./' + simulation +'/ftm_per_burst-histograms-' + str(20) + "m.pdf")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.savefig('./' + simulation_type +'/ftm_per_burst-overlap-histograms-' + str(sampled_distance) + "m.pdf")
     plt.clf()
     
-    df['error'].hist(range=[0,5], edgecolor='black', grid=True, legend=True, bins=30, by=df['burst_exponent'])
+    df['error'].hist(range=[0,4], edgecolor='black', grid=True, legend=True, bins=30, by=df['ftm_per_burst'])
     plt.xlabel('Error(m)')
     plt.ylabel("Frequency(#)");
-    plt.savefig('./' + simulation +'/burst_exponent-histograms-' + str(20) + "m.pdf")
+    plt.savefig('./' + simulation_type +'/ftm_per_burst-histograms-' + str(sampled_distance) + "m.pdf")
+    
+    plt.clf()
+    
+    
+    #BURST EXPONENT
+    df['error'].hist(range=[0,4], edgecolor='black', grid=True, legend=True, bins=30, by=df['burst_exponent'])
+    plt.xlabel('Error(m)')
+    plt.ylabel("Frequency(#)");
+    plt.savefig('./' + simulation_type +'/burst_exponent-histograms-' + str(sampled_distance) + "m.pdf")
     
     plt.close()
     
-    
+    hist = df
+    burst_exponent_values = df['burst_exponent'].unique()
+    for value in burst_exponent_values:
+        hist = df.loc[(df.burst_exponent == value)]
+        hist['error'].hist(range=[0,4], edgecolor='black', grid=True, label=value, bins=20, alpha=0.5)
+    plt.xlabel('Error')
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.savefig('./' + simulation_type +'/burst_exponent-overlap-histograms-' + str(sampled_distance) + "m.pdf")
+    plt.clf()            
+
+#¢reates and histogram, a boxplot and a density graph for each one of the parameters configuration in every simulation type
+def createSpecificGraphs(simulation, df):     
     parameters_configuration = [ f.path for f in os.scandir (simulation + '/') if f.is_dir() ]
     for parameter_config in parameters_configuration:
         parameters = parameter_config.replace(simulation + '/', '')
@@ -47,21 +73,30 @@ for simulation in simulation_type:
             plt.clf()
             
             #get the sampled distance data !!
-            df = df.loc[df.real_distance == 20]
+            df = df.loc[df.real_distance == sampled_distance]
         
             #histogram
             histogram = df['error']         
-            histogram.plot(kind="hist", xlim=(0,5), alpha=0.7, edgecolor='black', color='purple', bins= 25, title=simulation + ' ' + id, grid=True)
-            plt.title("Histogram (" + str(20) + "m) "+  simulation  + ' ' + id)
+            histogram.plot(kind="hist", xlim=(0,4), alpha=0.7, edgecolor='black', color='purple', bins= 25, title=simulation + ' ' + id, grid=True)
+            plt.title("Histogram (" + str(sampled_distance) + "m) "+  simulation  + ' ' + id)
             
 
-            plt.savefig('./' + path + '/histogram-' + str(20) + "m.pdf")
+            plt.savefig('./' + path + '/histogram-' + str(sampled_distance) + "m.pdf")
             plt.clf()
             
             #density
-            df.error.plot.density(color='green', xlim=(0,5), grid=True)
-            plt.title("Error density (" + str(20) + "m) "+  simulation  + ' ' + id)
+            df.error.plot.density(color='green', xlim=(0,4), grid=True)
+            plt.title("Error density (" + str(sampled_distance) + "m) "+  simulation  + ' ' + id)
             plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%d m'))
             
-            plt.savefig('./' + path + '/density-' + str(20) + "m.pdf")
+            plt.savefig('./' + path + '/density-' + str(sampled_distance) + "m.pdf")
             plt.close()
+
+simulation_type = [ f.path for f in os.scandir('./') if f.is_dir() ]
+for simulation in simulation_type:
+    df = pd.read_csv('./meassurements.csv')
+    df = df.loc[(df.meassurement_type == simulation.replace('./', '')) & (df.real_distance == sampled_distance)]
+    print(df.size)
+    
+    createComparisonGraphs(simulation, df)
+    createSpecificGraphs(simulation, df)
