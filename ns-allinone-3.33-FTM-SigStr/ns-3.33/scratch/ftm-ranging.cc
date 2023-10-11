@@ -104,15 +104,21 @@ void changePosition (Ptr<Node> sta) {
 
 void changeRadius(Ptr<Node> sta, double radius){
     if (mobility_model == "fix_position"){
-        Ptr<MobilityModel> mobility = sta->GetObject<MobilityModel>();
-        Ptr<MobilityModel> mobility_ap = _ap->GetNode()->GetObject<MobilityModel>();
+      Ptr<MobilityModel> mobility_ap = _ap->GetNode()->GetObject<MobilityModel>();
+      Ptr<MobilityModel> mobility = sta->GetObject<MobilityModel>();
 
-        mobility->SetPosition(Vector(distance, 0, 0));
+      std::cout << "----------------------------" << std::endl;
+      std::cout << mobility->GetPosition().x << mobility->GetPosition().y << std::endl; 
+      std::cout << mobility_ap->GetPosition().x << " " << mobility_ap->GetPosition().y << std::endl;
+      std::cout << "----------------------------" << std::endl;
+
+      mobility->SetPosition(Vector(distance, 0, 0));
     }
 
-    else if (mobility_model == "circle_mobility"){
-        Ptr<CircleMobilityModel> mobility = sta->GetObject<CircleMobilityModel>();
-        mobility->SetParameters(Vector (0, 0, 0), double(radius), double(90), double(10));
+    else if (mobility_model == "circle_velocity"){
+        Ptr<CircleMobilityModel> mobility = _ap->GetNode()->GetObject<CircleMobilityModel>();
+        std::cout << mobility << std::endl;
+        mobility->ChangeRadius(double(radius));
     }
 
     std::cout << "Radius changed, new radius " << distance << std::endl;
@@ -195,7 +201,7 @@ void SessionOver (FtmSession session)
         session_counter = 0;
         if (distance < 25){
             distance += 5;
-            changeRadius(_sta->GetNode(), double(distance));
+            changeRadius(_ap->GetNode(), double(distance));
         }
         else {
           configuration_finished = true;
@@ -218,7 +224,7 @@ void SessionOver (FtmSession session)
 
 //loads into configurations the set of parameters that will be used during each one of the mobility_model simulations
 void loadConfigurations(std::vector<std::vector<int>>& configurations){
-  // configurations.push_back({15,10,1,10,2});
+  configurations.push_back({15,10,1,10,2});
   configurations.push_back({15,10,1,10,3});
   configurations.push_back({15,10,1,10,4});
   configurations.push_back({15,10,1,10,5});

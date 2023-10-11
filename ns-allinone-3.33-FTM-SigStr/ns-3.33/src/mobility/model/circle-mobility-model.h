@@ -30,6 +30,7 @@ public:
      * Unit is meters/s
      */
     void SetParameters(const Vector &Origin, const double Radius, const double StartAngle, const double Speed);
+    void ChangeRadius(const double Radius);
     virtual Vector DoGetPosition (void) const;
     virtual Vector DoGetVelocity (void) const;
 

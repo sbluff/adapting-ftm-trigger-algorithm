@@ -16,6 +16,12 @@ namespace ns3 {
       m_Speed=Speed;
       NotifyCourseChange ();
   }
+  
+  void
+  CircleMobilityModel::ChangeRadius(const double Radius)
+  {
+      m_Radius=Radius;
+  }
 
   TypeId CircleMobilityModel::GetTypeId (void)
   {

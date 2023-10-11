@@ -15,7 +15,7 @@ def file_is_empty(filename):
                 return False
     return True
 
-with open('./meassurements.csv', 'w', newline='') as csvfile:
+with open('./data/data.csv', 'w', newline='') as csvfile:
     fieldnames = ['real_distance','meassured_distance','meassurement_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
