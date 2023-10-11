@@ -103,8 +103,10 @@ void changePosition (Ptr<Node> sta) {
 
 
 void changeRadius(Ptr<Node> sta, double radius){
-    if (mobility_model == "fix_point"){
+    if (mobility_model == "fix_position"){
         Ptr<MobilityModel> mobility = sta->GetObject<MobilityModel>();
+        Ptr<MobilityModel> mobility_ap = _ap->GetNode()->GetObject<MobilityModel>();
+
         mobility->SetPosition(Vector(distance, 0, 0));
     }
 
@@ -114,6 +116,8 @@ void changeRadius(Ptr<Node> sta, double radius){
     }
 
     std::cout << "Radius changed, new radius " << distance << std::endl;
+
+
 }
 
 
@@ -202,7 +206,7 @@ void SessionOver (FtmSession session)
     }
 
     if (int(distance) <= 25 && !configuration_finished){
-      Simulator::Schedule(Seconds (0.1), &GenerateTraffic);
+      Simulator::Schedule(Seconds (0.001), &GenerateTraffic);
     }
 
   }
@@ -214,7 +218,7 @@ void SessionOver (FtmSession session)
 
 //loads into configurations the set of parameters that will be used during each one of the mobility_model simulations
 void loadConfigurations(std::vector<std::vector<int>>& configurations){
-  configurations.push_back({15,10,1,10,2});
+  // configurations.push_back({15,10,1,10,2});
   configurations.push_back({15,10,1,10,3});
   configurations.push_back({15,10,1,10,4});
   configurations.push_back({15,10,1,10,5});
@@ -235,8 +239,8 @@ void loadConfigurations(std::vector<std::vector<int>>& configurations){
 //loads in models the type of simulations that will take place
 void loadModels(std::vector<std::string>& models){
   // models.push_back("test");
-  // models.push_back("circle_mean");
-  // models.push_back("circle_velocity");
+  models.push_back("circle_mean");
+  models.push_back("circle_velocity");
   models.push_back("fix_position");
 }
 
@@ -371,7 +375,6 @@ void runSimulation(const std::vector<int>& configuration){
     Simulator::Run ();
     Simulator::Destroy ();
 }
-
 
 int main (int argc, char *argv[])
 {
