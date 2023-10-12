@@ -150,6 +150,7 @@ def createSpecificGraphs(simulation, df):
                 plt.savefig('./' + path + '/density-' + str(sampled_distance) + "m.pdf")
                 plt.close()
 
+#studies the different distributions of the error for different meassurements_type
 def createParamStudyGraphs(df):
     df = df.loc[df.real_distance == sampled_distance]
     path = './data/parameter_study/'
@@ -181,17 +182,58 @@ def createParamStudyGraphs(df):
         plt.xlabel('Error(m)')
         plt.ylabel("Frequency(#)")    
         plt.savefig(path + parameter + ".pdf")
-        # plt.clf()
+        plt.clf()
 
+def parameterValueGraphs(df):
+    path = './data/parameter_study/'
+    sampled_distance = 10
+
+    parameters = ['burst_exponent', 'ftm_per_burst']
+    for parameter in parameters:
+        fig, axes = plt.subplots(4, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        ax = axes.ravel()
+        values = df[parameter].unique()
+        values.sort()
+        counter = 0
+        for value in values:
+            simulation_types = df['meassurement_type'].unique()
+            for simulation_type in simulation_types:
+                if parameter == 'ftm_per_burst':
+                    hist = df.loc[(df.ftm_per_burst == value) & (df.meassurement_type == simulation_type) &(df.real_distance == sampled_distance)]
+                    hist['error'].hist(range=[-1,5], edgecolor='black', grid=True, ax = ax[counter], label=simulation_type, bins=50, alpha=0.5)
+
+                elif parameter == 'burst_exponent':
+                    hist = df.loc[(df.burst_exponent == value) & (df.meassurement_type == simulation_type) & (df.real_distance == sampled_distance)]
+                    hist['error'].hist(range=[-1,5], edgecolor='black', grid=True, ax = ax[counter], label=simulation_type, bins=50, alpha=0.5)
+                
+                ax[counter].legend()
+                ax[counter].set_xlim(-1, 5)
+                ax[counter].set_title(parameter + "-" + str(value), fontsize = 15)
+                ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+                ax[counter].tick_params(axis='both', which='minor', labelsize=14)    
+                
+
+            plt.title(parameter + " = " + str(value))
+            plt.xlabel('Error(m)')
+            plt.ylabel("Frequency(#)")
+            #plt.savefig(path + parameter + "-" + str(value) + ".pdf")    
+            counter = counter + 1
+        plt.xlabel('Error(m)')
+        plt.ylabel("Frequency(#)")    
+        plt.savefig(path + parameter + "-values.pdf")
+        plt.clf()
+    
+        
 
 df = pd.read_csv('./data/data.csv')
 createParamStudyGraphs(df)
-simulation_type = [ f.path for f in os.scandir('./') if f.is_dir() ]
-for simulation in simulation_type:
-    if "data" not in simulation:
-        print(simulation)
-        df = df.loc[(df.meassurement_type == simulation.replace('./', '')) & (df.real_distance == sampled_distance)]
+parameterValueGraphs(df)
+# simulation_type = [ f.path for f in os.scandir('./') if f.is_dir() ]
+# for simulation in simulation_type:
+#     if "data" not in simulation:
+#         print(simulation)
+#         df = df.loc[(df.meassurement_type == simulation.replace('./', '')) & (df.real_distance == sampled_distance)]
         
-        createComparisonGraphs(simulation, df)
-        createSpecificGraphs(simulation, df)
-        createStdDeviationGraph(simulation, df)
+#         createComparisonGraphs(simulation, df)
+#         createSpecificGraphs(simulation, df)
+#         createStdDeviationGraph(simulation, df)
