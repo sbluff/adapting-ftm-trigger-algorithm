@@ -4,6 +4,7 @@
 *.txt
 *.pcap
 *.map
+*.csv
 !tmp.txt
 !*.pdf
 !simulation_parameters.json
