@@ -1,6 +1,5 @@
 #EXECUTE export_simulations_csv before running this script!
 
-
 import glob
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -14,7 +13,6 @@ from matplotlib.ticker import FormatStrFormatter
 sampled_distance = 10
 
 matplotlib.style.use('ggplot')
-
 
 def createStdDeviationGraph(simulation, df):
     path = './' + simulation + '/parameter_study'
@@ -152,27 +150,26 @@ def createSpecificGraphs(simulation, df):
 
 #studies the different distributions of the error for different meassurements_type
 def createParamStudyGraphs(df):
-    df = df.loc[df.real_distance == sampled_distance]
     path = './data/parameter_study/'
-    sim_types = ['fix_position', 'circle_mean', 'circle_velocity']
+    sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'gauss_markov']
     
     parameters = ['burst_exponent', 'ftm_per_burst']
     for parameter in parameters:
         values = df[parameter].unique()
-        fig, axes = plt.subplots(3, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        fig, axes = plt.subplots(2,2, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
         ax = axes.ravel()
 
         counter = 0
         for sim_type in sim_types: 
             for value in values:
                 if parameter == 'ftm_per_burst':
-                    hist = df.loc[(df.ftm_per_burst == value) & (df.meassurement_type == sim_type)]
+                    hist = df.loc[(df.ftm_per_burst == value) &  (df.meassurement_type == sim_type)]
                     print(hist.size)
-                    hist['error'].hist(range=[-1,5], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=50, alpha=0.5)  
+                    hist['error'].hist(range=[-1,5], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
                 elif parameter == 'burst_exponent':
-                    hist = df.loc[(df.burst_exponent == value) & (df.meassurement_type == sim_type)]
+                    hist = df.loc[(df.burst_exponent == value) &  (df.meassurement_type == sim_type)]
                     print(hist.size)
-                    hist['error'].hist(range=[-1,5], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=50, alpha=0.5)  
+                    hist['error'].hist(range=[-1,5], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
             ax[counter].legend()
             ax[counter].set_xlim(-1, 5)
             ax[counter].set_title(parameter + ' for ' + sim_type, fontsize = 15)
@@ -199,15 +196,15 @@ def parameterValueGraphs(df):
             simulation_types = df['meassurement_type'].unique()
             for simulation_type in simulation_types:
                 if parameter == 'ftm_per_burst':
-                    hist = df.loc[(df.ftm_per_burst == value) & (df.meassurement_type == simulation_type) &(df.real_distance == sampled_distance)]
-                    hist['error'].hist(range=[-1,5], edgecolor='black', grid=True, ax = ax[counter], label=simulation_type, bins=50, alpha=0.5)
+                    hist = df.loc[(df.ftm_per_burst == value) & (df.meassurement_type == simulation_type)]
+                    hist['error'].hist(range=[-1,5], edgecolor='black', grid=True, ax = ax[counter], label=simulation_type, bins=80, alpha=0.5)
 
                 elif parameter == 'burst_exponent':
-                    hist = df.loc[(df.burst_exponent == value) & (df.meassurement_type == simulation_type) & (df.real_distance == sampled_distance)]
-                    hist['error'].hist(range=[-1,5], edgecolor='black', grid=True, ax = ax[counter], label=simulation_type, bins=50, alpha=0.5)
+                    hist = df.loc[(df.burst_exponent == value) & (df.meassurement_type == simulation_type)]
+                    hist['error'].hist(range=[-1,5], edgecolor='black', grid=True, ax = ax[counter], label=simulation_type, bins=80, alpha=0.5)
                 
                 ax[counter].legend()
-                ax[counter].set_xlim(-1, 5)
+                ax[counter].set_xlim(-1, 4)
                 ax[counter].set_title(parameter + "-" + str(value), fontsize = 15)
                 ax[counter].tick_params(axis='both', which='minor', labelsize=14)
                 ax[counter].tick_params(axis='both', which='minor', labelsize=14)    
@@ -222,12 +219,60 @@ def parameterValueGraphs(df):
         plt.ylabel("Frequency(#)")    
         plt.savefig(path + parameter + "-values.pdf")
         plt.clf()
-    
-        
 
+def violinPlots(df):
+    graphs = ['error', 'channel_time', 'channel_usage']
+    for graph in graphs:
+        path = './data/parameter_study/'
+        sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'gauss_markov']
+        for type in sim_types:        
+            pdf_name = path + type + "-" + graph + "-violin-plot.pdf"
+            _data = df.loc[(df.meassurement_type == type)]
+                
+            sns.violinplot(data = _data, x = 'burst_exponent', y = graph, hue = 'ftm_per_burst')               
+                
+            plt.xlabel('burst_exponent')
+            plt.ylabel(graph)    
+            plt.savefig(pdf_name)
+            # plt.show()
+            plt.clf()         
+
+def channelEfficiencyGraphs(df):
+    path = './data/parameter_study/'
+    sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'gauss_markov']
+    
+    parameters = ['burst_exponent', 'ftm_per_burst']
+    for parameter in parameters:
+        values = df[parameter].unique()
+        fig, axes = plt.subplots(2,2, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        ax = axes.ravel()
+
+        counter = 0
+        for sim_type in sim_types: 
+            for value in values:
+                if parameter == 'ftm_per_burst':
+                    hist = df.loc[(df.ftm_per_burst == value) &  (df.meassurement_type == sim_type)]
+                    print(hist.size)
+                    hist['efficiency'].hist(range=[0, 200], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                elif parameter == 'burst_exponent':
+                    hist = df.loc[(df.burst_exponent == value) &  (df.meassurement_type == sim_type)]
+                    print(hist.size)
+                    hist['efficiency'].hist(range=[0, 200], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+            ax[counter].legend()
+            ax[counter].set_title(parameter + ' for ' + sim_type, fontsize = 15)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            counter = counter + 1
+        plt.xlabel('Efficiency meassurement( 1/(m*s) )')
+        plt.ylabel("Frequency(#)")    
+        plt.savefig(path + parameter + "_efficiency.pdf")
+        plt.clf()
+  
 df = pd.read_csv('./data/data.csv')
 createParamStudyGraphs(df)
 parameterValueGraphs(df)
+channelEfficiencyGraphs(df)
+violinPlots(df)
 # simulation_type = [ f.path for f in os.scandir('./') if f.is_dir() ]
 # for simulation in simulation_type:
 #     if "data" not in simulation:
