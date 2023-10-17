@@ -55,12 +55,14 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("FtmRanging");
 
-int selected_error_mode = 1; //0: wired, 1: wireless, 2: wireless sig_str, 3: wireless_sig_str with fading
 int session_counter = 0;
-int measurements_per_distance = 1000;
+int measurements_per_distance = 2000;
+int max_sampling_distance = 10;
+int step = 5;
+double velocity = 0;
+double distance = 10;
 std::string file_name;
 int min_delta_ftm, burst_duration, burst_exponent, burst_period, ftm_per_burst;
-double distance;
 Ptr<WirelessFtmErrorModel::FtmMap> map;
 Ptr<WifiNetDevice> _ap;
 Ptr<WifiNetDevice> _sta;
@@ -69,6 +71,9 @@ std::string mobility_model;
 double t1;
 double t2; //meassure session lenght in time
 bool configuration_finished = false;
+
+Vector initial_position = Vector(0, 0, 0); //this positions will be used for the mean 
+Vector final_position = Vector(0, 0, 0);	//position in the markov meassurements
 
 void SessionOver (FtmSession session);
 
@@ -134,21 +139,20 @@ static void GenerateTraffic ()
   Mac48Address to = Mac48Address::ConvertFrom (recvAddr);
 
   Ptr<FtmSession> session = _sta_mac->NewFtmSession(to);
-  if (session == 0)
-    {
-      NS_FATAL_ERROR ("ftm not enabled");
-    }
 
+  if (session == 0)
+    NS_FATAL_ERROR ("ftm not enabled");
+    
   Ptr<FtmErrorModel> error_model;
-  if (selected_error_mode == 1) {
-      //create wireless error model
-      //m_ap has to be created prior
-      Ptr<WirelessFtmErrorModel> wireless_error = CreateObject<WirelessFtmErrorModel> ();
-      wireless_error->SetFtmMap(map);
-      wireless_error->SetNode(_sta->GetNode());
-      wireless_error->SetChannelBandwidth(WiredFtmErrorModel::Channel_20_MHz);
-      error_model = wireless_error;
-  }
+
+	//create wireless error model
+	//m_ap has to be created prior
+	Ptr<WirelessFtmErrorModel> wireless_error = CreateObject<WirelessFtmErrorModel> ();
+	wireless_error->SetFtmMap(map);
+	wireless_error->SetNode(_sta->GetNode());
+	wireless_error->SetChannelBandwidth(WiredFtmErrorModel::Channel_20_MHz);
+	error_model = wireless_error;
+
 
   //using wired error model in this case
   session->SetFtmErrorModel(error_model);
@@ -160,14 +164,20 @@ static void GenerateTraffic ()
 
   session->SetSessionOverCallback(MakeCallback(&SessionOver));
   session->SessionBegin();
-  t1 = Simulator::Now().GetSeconds();
+	if (mobility_model == "gauss_markov")
+		initial_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
+	
 
+  t1 = Simulator::Now().GetSeconds();
 }
 
 
 void SessionOver (FtmSession session)
 {
-  if (distance <= 25){
+  if (distance <= max_sampling_distance){
+		if (mobility_model == "gauss_markov")
+			final_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
+
     t2 =  Simulator::Now().GetSeconds();
     std::string file_path = "./ftm_ranging/simulations/" + mobility_model + "/" + std::to_string(int(min_delta_ftm)) + '-' + std::to_string(int(burst_duration)) + '-' + std::to_string(int(burst_exponent)) + '-' + std::to_string(int(burst_period)) + '-' + std::to_string(int(ftm_per_burst)) + '/';
     file_name =  file_path + std::to_string(int(distance)) + 'm';
@@ -189,9 +199,21 @@ void SessionOver (FtmSession session)
         rtts.pop_front();
         count++;
     }
-    if (distance <= 25){
+    if (distance <= max_sampling_distance){
         mean_sig_str = double(mean_sig_str / count);
-        output << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) <<  "\n";
+				double expected_distance;
+				if (mobility_model == "gauss_markov"){
+					Vector middle_point = Vector ((final_position.x-initial_position.x)/2, (final_position.y-initial_position.y)/2, (final_position.y-initial_position.y)/2);
+					expected_distance = CalculateDistance(middle_point, Vector(0,0,0));
+					// std::cout << "----------------------------" << std::endl;
+					// std::cout << "start_position: " << initial_position.x << " " << initial_position.y << " " << initial_position.z << std::endl;
+					// std::cout << "end_position: " << final_position.x << " " << final_position.y << " " << final_position.z << std::endl;
+					// std::cout << "distance: " << expected_distance << std::endl;
+				}
+				else
+					expected_distance = distance;
+
+        output << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) << " " << velocity  << "\n";
     }
     output.close();
 
@@ -199,8 +221,8 @@ void SessionOver (FtmSession session)
     changePosition(_sta->GetNode());
     if (session_counter >= measurements_per_distance){
         session_counter = 0;
-        if (distance < 25){
-            distance += 5;
+        if (distance < max_sampling_distance){
+            distance += step;
             changeRadius(_ap->GetNode(), double(distance));
         }
         else {
@@ -211,7 +233,7 @@ void SessionOver (FtmSession session)
         }
     }
 
-    if (int(distance) <= 25 && !configuration_finished){
+    if (int(distance) <= max_sampling_distance && !configuration_finished){
       Simulator::Schedule(Seconds (0.001), &GenerateTraffic);
     }
 
@@ -245,6 +267,7 @@ void loadConfigurations(std::vector<std::vector<int>>& configurations){
 //loads in models the type of simulations that will take place
 void loadModels(std::vector<std::string>& models){
   // models.push_back("test");
+  models.push_back("gauss_markov");
   models.push_back("circle_mean");
   models.push_back("circle_velocity");
   models.push_back("fix_position");
@@ -253,6 +276,7 @@ void loadModels(std::vector<std::string>& models){
 //based on mobility_mode variable this function assigns the container different mobility modes and sets its parameters
 void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivingNodes, std::string mobility_model){
     if (mobility_model == "circle_velocity"){
+				velocity = 1.261111;
         MobilityHelper circularMobility;
         circularMobility.SetMobilityModel ("ns3::CircleMobilityModel");
         circularMobility.Install (receivingNodes);
@@ -267,18 +291,8 @@ void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivin
     }
 
     else if (mobility_model == "circle_mean" || mobility_model == "test"){
+				velocity = 0;
         MobilityHelper constantPositionMobility;
-        constantPositionMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-        constantPositionMobility.Install (initiatingNodes);
-        constantPositionMobility.Install (receivingNodes);
-        Ptr<ConstantPositionMobilityModel> m1 = initiatingNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
-        Ptr<ConstantPositionMobilityModel> m2 = receivingNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
-        m1->DoSetPosition(Vector (0, 0, 0));
-        m2->DoSetPosition(Vector (0, 0, 0));
-    }
-
-    else if (mobility_model == "fix_position"){
-              MobilityHelper constantPositionMobility;
         constantPositionMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
         constantPositionMobility.Install (initiatingNodes);
         constantPositionMobility.Install (receivingNodes);
@@ -288,10 +302,56 @@ void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivin
         m2->DoSetPosition(Vector (0, 0, 0));
     }
 
-    else{
-        std::cout << "invalid mobility model, can't configure it!" << std::endl;
-        return;
+    else if (mobility_model == "fix_position"){
+				velocity = 0;
+        MobilityHelper constantPositionMobility;
+        constantPositionMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+        constantPositionMobility.Install (initiatingNodes);
+        constantPositionMobility.Install (receivingNodes);
+        Ptr<ConstantPositionMobilityModel> m1 = initiatingNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
+        Ptr<ConstantPositionMobilityModel> m2 = receivingNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
+        m1->DoSetPosition(Vector (distance, 0, 0));
+        m2->DoSetPosition(Vector (0, 0, 0));
     }
+
+    else if (mobility_model == "gauss_markov"){
+				velocity = 1.261111;
+
+        MobilityHelper mobility;
+			
+				mobility.SetMobilityModel (
+					"ns3::GaussMarkovMobilityModel",
+					"Bounds", BoxValue (Box (0, distance, 0, distance, 0, distance)),
+					"TimeStep", TimeValue (Seconds (0.5)),
+					"Alpha", DoubleValue (0.85),
+					"MeanVelocity", StringValue ("ns3::UniformRandomVariable[Min="+std::to_string(velocity)+"|Max="+std::to_string(velocity)+"]"),
+					"MeanDirection", StringValue ("ns3::UniformRandomVariable[Min=0|Max=6.283185307]"),
+					"MeanPitch", StringValue ("ns3::UniformRandomVariable[Min=0.05|Max=0.05]"),
+					"NormalVelocity", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.0|Bound=0.0]"),
+					"NormalDirection", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.2|Bound=0.4]"),
+					"NormalPitch", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.02|Bound=0.04]")
+				);
+			
+				mobility.SetPositionAllocator ("ns3::RandomBoxPositionAllocator",
+					"X", StringValue ("ns3::UniformRandomVariable[Min=0|Max=0]"),
+					"Y", StringValue ("ns3::UniformRandomVariable[Min=0|Max=0]"),
+					"Z", StringValue ("ns3::UniformRandomVariable[Min=0|Max=0]")
+				);
+ 
+        mobility.Install (receivingNodes);
+
+
+        MobilityHelper constantPositionMobility;
+        constantPositionMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+        constantPositionMobility.Install (initiatingNodes);
+        Ptr<ConstantPositionMobilityModel> m1 = initiatingNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
+        m1->DoSetPosition(Vector (0, 0, 0));
+    }
+
+		else {
+			  std::cout << "invalid mobility model, can't configure it!" << std::endl;
+        return;
+		}
 }
 
 // Creates the nodes infrastructure, configures them according to configuration param, assigns mobility models according to mobility_mode param
@@ -337,11 +397,11 @@ void runSimulation(const std::vector<int>& configuration){
 
 //  wifiChannel.AddPropagationLoss ("ns3::ThreeGppIndoorOfficePropagationLossModel");
 
-    if (selected_error_mode == 1) {
-        // The below FixedRssLossModel will cause the rss to be fixed regardless
-        // of the distance between the two stations, and the transmit power
-        wifiChannel.AddPropagationLoss ("ns3::FixedRssLossModel","Rss",DoubleValue (-40));
-    }
+
+		// The below FixedRssLossModel will cause the rss to be fixed regardless
+		// of the distance between the two stations, and the transmit power
+		wifiChannel.AddPropagationLoss ("ns3::FixedRssLossModel","Rss",DoubleValue (-40));
+    
 
 
     wifiPhy.SetChannel (wifiChannel.Create ());
@@ -377,18 +437,18 @@ void runSimulation(const std::vector<int>& configuration){
     wifiPhy.EnablePcap ("ftm-ranging", devices);
     Simulator::ScheduleNow (&GenerateTraffic);
 
-    Simulator::Stop (Seconds (50000.0));
+    Simulator::Stop (Seconds (500000.0));
     Simulator::Run ();
     Simulator::Destroy ();
 }
 
+
 int main (int argc, char *argv[])
 {
-  selected_error_mode = 1;
   map = CreateObject<WirelessFtmErrorModel::FtmMap> ();
-  if (selected_error_mode != 0) {
-      map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error.map");
-  }
+
+  map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error.map");
+
   std::cout << "Multipath Map loaded!" << std::endl;
   //set time resolution to pico seconds for the time stamps, as default is in nano seconds. IMPORTANT
   Time::SetResolution(Time::PS);
