@@ -16,7 +16,7 @@ def file_is_empty(filename):
     return True
 
 with open('./data/data.csv', 'w', newline='') as csvfile:
-    fieldnames = ['real_distance','meassured_distance','meassurement_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage', 'efficiency']
+    fieldnames = ['real_distance','meassured_distance','meassurement_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage', 'efficiency', 'velocity']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     subfolders = [ f.path for f in os.scandir('./') if f.is_dir() ]
@@ -44,9 +44,11 @@ with open('./data/data.csv', 'w', newline='') as csvfile:
                             'burst_exponent': parameters[2],'burst_duration': parameters[3],
                             'ftm_per_burst':parameters[4],
                             'error': value-curr_distance,
-                            'session_time': m[3], 'channel_time': m[4],
+                            'session_time': m[3], 
+                            'channel_time': m[4],
                             'channel_usage': channel_usage,
-                            'efficiency':1/(float(channel_usage * abs(value-m[0]))) if value-m[0] else 0
+                            'efficiency':1/(float(channel_usage * abs(value-m[0]))) if value-m[0] else 0,
+                            'velocity': m[5]
                         })
 
 print("Data exported correctly!")
