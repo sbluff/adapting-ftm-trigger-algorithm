@@ -9,6 +9,7 @@ import json
 import matplotlib
 from matplotlib.ticker import FormatStrFormatter
 
+
 #used for generating graphs
 sampled_distance = 10
 
@@ -115,6 +116,7 @@ def createSpecificGraphs(simulation, df):
         if "parameter_study" not in parameter_config:
             parameters = parameter_config.replace(simulation + '/', '')
             parameters = parameters.split('-')
+            print(parameters)
             id = str(parameters[0]) +  '-' + str(parameters[1]) + '-' + str(parameters[2]) + '-' + str(parameters[3]) + '-' + str(parameters[4])
             path = simulation + '/' + id + '/graphs/'
             if not os.path.isdir(path):
@@ -122,7 +124,8 @@ def createSpecificGraphs(simulation, df):
                 
             df = pd.read_csv('./data/data.csv')
             df = df.loc[(df.meassurement_type == simulation.replace('./', '')) & (df.min_delta_ftm == int(parameters[0])) & (df.burst_period == int(parameters[1])) & (df.burst_exponent == int(parameters[2])) & (df.burst_duration == int(parameters[3])) & (df.ftm_per_burst == int(parameters[4]))]
-            if len(df.index) != 0:
+            print(df.size)
+            if len(df.size) != 0:
                 boxplot = df.boxplot(by ='real_distance', column =['meassured_distance'], grid = True)
                 boxplot.set_title(simulation  + ' ' + id)
                 plt.savefig('./' + path + '/' + "boxplot.pdf")
@@ -165,11 +168,11 @@ def createParamStudyGraphs(df):
                 if parameter == 'ftm_per_burst':
                     hist = df.loc[(df.ftm_per_burst == value) &  (df.meassurement_type == sim_type)]
                     print(hist.size)
-                    hist['error'].hist(range=[-1,5], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                    hist['error'].hist(range=[-10,10], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
                 elif parameter == 'burst_exponent':
                     hist = df.loc[(df.burst_exponent == value) &  (df.meassurement_type == sim_type)]
                     print(hist.size)
-                    hist['error'].hist(range=[-1,5], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                    hist['error'].hist(range=[-10,10], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
             ax[counter].legend()
             ax[counter].set_xlim(-1, 5)
             ax[counter].set_title(parameter + ' for ' + sim_type, fontsize = 15)
@@ -301,6 +304,40 @@ def velocityComparison(df):
         plt.savefig(path + '/' + simulation + '-velocity-histograms.pdf')
         
         plt.clf()
+        
+def channelUsageComparision(df): 
+    simulation_types = ['circle_velocity', 'brownian']
+    
+    for simulation in simulation_types:
+        counter = 0
+        fig, axes = plt.subplots(2,2, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        ax = axes.ravel()
+        hist = df.loc[(df.meassurement_type == simulation)]
+        
+        velocities = hist['velocity'].unique()
+        print(velocities)
+        path = './data/parameter_study/' + simulation
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        
+        
+        for value in velocities:
+            print(value)
+            hist = df.loc[(df.velocity == value) & (df.meassurement_type == simulation)]
+            print(hist.size)
+            hist['channel_usage'].hist(range=[0,0.2], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=50,alpha=0.5)   
+            ax[counter].legend()
+            # ax[counter].set_title(value + ' for ' + simulation, fontsize = 15)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            counter += 1   
+        plt.xlabel('Error')
+        plt.ylabel("Frequency")
+        plt.title("Channel Usage for different velocities for " + simulation)
+        plt.legend()
+        plt.savefig(path + '/' + simulation + '-channel_usage-histograms.pdf')
+        
+        plt.clf()      
     
         
 df = pd.read_csv('./data/data.csv')
@@ -309,6 +346,7 @@ parameterValueGraphs(df)
 channelEfficiencyGraphs(df)
 violinPlots(df)
 velocityComparison(df)
+channelUsageComparision(df)
 # simulation_type = [ f.path for f in os.scandir('./') if f.is_dir() ]
 # for simulation in simulation_type:
 #     if "data" not in simulation:
@@ -316,5 +354,8 @@ velocityComparison(df)
 #         df = df.loc[(df.meassurement_type == simulation.replace('./', '')) & (df.real_distance == sampled_distance)]
         
 #         createComparisonGraphs(simulation, df)
+#         print("comparison graphs")
 #         createSpecificGraphs(simulation, df)
+#         print("specific graphs")
 #         createStdDeviationGraph(simulation, df)
+#         print("std_deviation")

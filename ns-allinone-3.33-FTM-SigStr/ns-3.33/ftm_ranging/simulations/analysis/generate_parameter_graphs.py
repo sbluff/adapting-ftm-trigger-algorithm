@@ -1,0 +1,81 @@
+import glob
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import os
+import json
+import matplotlib
+from matplotlib.ticker import FormatStrFormatter
+
+#studies the different distributions of the error for different values of each parameter
+def errorHistograms(df):
+    path = './parameter/'
+    sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'brownian']
+    
+    parameters = ['burst_exponent', 'ftm_per_burst']
+    for parameter in parameters:
+        values = df[parameter].unique()
+        fig, axes = plt.subplots(2,2, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        ax = axes.ravel()
+
+        counter = 0
+        for sim_type in sim_types: 
+            for value in values:
+                if parameter == 'ftm_per_burst':
+                    hist = df.loc[(df.ftm_per_burst == value) &  (df.simulation_type == sim_type)]
+                    hist['error'].hist(range=[-10,10], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                elif parameter == 'burst_exponent':
+                    hist = df.loc[(df.burst_exponent == value) &  (df.simulation_type == sim_type)]
+                    hist['error'].hist(range=[-10,10], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+            ax[counter].legend()
+            ax[counter].set_xlim(-10, 10)
+            ax[counter].set_title('Error for ' + sim_type, fontsize = 15)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            counter = counter + 1
+        plt.xlabel('Error(m)')
+        plt.ylabel("Frequency(#)") 
+        plt.savefig(path + parameter + "/error_histogram.pdf")
+        print(path + parameter + "/error_histogram.pdf")
+        plt.clf()
+
+#studies the different distributions of the channel_efficiency for different values of each parameter
+def channelEfficiencyHistograms(df):
+    path = './parameter/'
+    sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'brownian']
+    
+    parameters = ['burst_exponent', 'ftm_per_burst']
+    for parameter in parameters:
+        values = df[parameter].unique()
+        fig, axes = plt.subplots(2,2, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        ax = axes.ravel()
+
+        counter = 0
+        for sim_type in sim_types: 
+            for value in values:
+                if parameter == 'ftm_per_burst':
+                    hist = df.loc[(df.ftm_per_burst == value) &  (df.simulation_type == sim_type)]
+                    hist['efficiency'].hist(range=[0, 200], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                elif parameter == 'burst_exponent':
+                    hist = df.loc[(df.burst_exponent == value) &  (df.simulation_type == sim_type)]
+                    hist['efficiency'].hist(range=[0, 200], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+            ax[counter].legend()
+            ax[counter].set_title('Channel efficiency for ' + sim_type, fontsize = 15)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            counter = counter + 1
+        plt.xlabel('Efficiency meassurement( 1/(m*s) )')
+        plt.ylabel("Frequency(#)")    
+        plt.savefig(path + parameter + '/' + "channel_efficiency.pdf")
+        print(path + parameter + '/' + "channel_efficiency.pdf")
+        plt.clf()           
+
+circle_mean_data = pd.read_csv('data-circle_mean.csv')    
+circle_velocity_data = pd.read_csv('data-circle_velocity.csv')    
+fix_position_data = pd.read_csv('data-fix_position.csv')    
+brownian_data = pd.read_csv('data-brownian.csv')   
+all_data = pd.concat([circle_mean_data, circle_velocity_data, fix_position_data, brownian_data]) #merge all data in a data frame
+
+
+errorHistograms(all_data)
+channelEfficiencyHistograms(all_data)
