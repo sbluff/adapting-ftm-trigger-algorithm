@@ -50,6 +50,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <cmath>
+#include <string>
 
 using namespace ns3;
 
@@ -164,7 +165,7 @@ static void GenerateTraffic ()
 
   session->SetSessionOverCallback(MakeCallback(&SessionOver));
   session->SessionBegin();
-	if (mobility_model == "gauss_markov")
+	if (mobility_model == "brownian")
 		initial_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
 	
 
@@ -175,7 +176,7 @@ static void GenerateTraffic ()
 void SessionOver (FtmSession session)
 {
   if (distance <= max_sampling_distance){
-		if (mobility_model == "gauss_markov")
+		if (mobility_model == "brownian")
 			final_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
 
     t2 =  Simulator::Now().GetSeconds();
@@ -202,12 +203,13 @@ void SessionOver (FtmSession session)
     if (distance <= max_sampling_distance){
         mean_sig_str = double(mean_sig_str / count);
 				double expected_distance;
-				if (mobility_model == "gauss_markov"){
-					Vector middle_point = Vector ((final_position.x-initial_position.x)/2, (final_position.y-initial_position.y)/2, (final_position.y-initial_position.y)/2);
-					expected_distance = CalculateDistance(middle_point, Vector(0,0,0));
+				if (mobility_model == "brownian"){
+					Vector middle_position = Vector ((final_position.x+initial_position.x)/2, (final_position.y+initial_position.y)/2, (final_position.z+initial_position.z)/2);
+					expected_distance = CalculateDistance(middle_position, Vector(0,0,0));
 					// std::cout << "----------------------------" << std::endl;
-					// std::cout << "start_position: " << initial_position.x << " " << initial_position.y << " " << initial_position.z << std::endl;
-					// std::cout << "end_position: " << final_position.x << " " << final_position.y << " " << final_position.z << std::endl;
+					// std::cout << "intial_position: " << initial_position.x << " " << initial_position.y << " " << initial_position.z << std::endl;
+					// std::cout << "final_position: " << final_position.x << " " << final_position.y << " " << final_position.z << std::endl;
+					// std::cout << "middle_position: " << middle_position.x << " " << middle_position.y << " " << middle_position.z << std::endl;
 					// std::cout << "distance: " << expected_distance << std::endl;
 				}
 				else
@@ -267,16 +269,16 @@ void loadConfigurations(std::vector<std::vector<int>>& configurations){
 //loads in models the type of simulations that will take place
 void loadModels(std::vector<std::string>& models){
   // models.push_back("test");
-  models.push_back("gauss_markov");
-  models.push_back("circle_mean");
-  models.push_back("circle_velocity");
-  models.push_back("fix_position");
+  models.push_back("brownian");
+  // models.push_back("circle_mean");
+  // models.push_back("circle_velocity");
+  // models.push_back("fix_position");
 }
 
 //based on mobility_mode variable this function assigns the container different mobility modes and sets its parameters
 void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivingNodes, std::string mobility_model){
     if (mobility_model == "circle_velocity"){
-				velocity = 1.261111;
+				velocity = 3.5;
         MobilityHelper circularMobility;
         circularMobility.SetMobilityModel ("ns3::CircleMobilityModel");
         circularMobility.Install (receivingNodes);
@@ -303,7 +305,7 @@ void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivin
     }
 
     else if (mobility_model == "fix_position"){
-				velocity = 0;
+        velocity = 0;
         MobilityHelper constantPositionMobility;
         constantPositionMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
         constantPositionMobility.Install (initiatingNodes);
@@ -314,30 +316,24 @@ void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivin
         m2->DoSetPosition(Vector (0, 0, 0));
     }
 
-    else if (mobility_model == "gauss_markov"){
-				velocity = 1.261111;
-
+    else if (mobility_model == "brownian"){
+        velocity = 2.223;
         MobilityHelper mobility;
-			
-				mobility.SetMobilityModel (
-					"ns3::GaussMarkovMobilityModel",
-					"Bounds", BoxValue (Box (0, distance, 0, distance, 0, distance)),
-					"TimeStep", TimeValue (Seconds (0.5)),
-					"Alpha", DoubleValue (0.85),
-					"MeanVelocity", StringValue ("ns3::UniformRandomVariable[Min="+std::to_string(velocity)+"|Max="+std::to_string(velocity)+"]"),
-					"MeanDirection", StringValue ("ns3::UniformRandomVariable[Min=0|Max=6.283185307]"),
-					"MeanPitch", StringValue ("ns3::UniformRandomVariable[Min=0.05|Max=0.05]"),
-					"NormalVelocity", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.0|Bound=0.0]"),
-					"NormalDirection", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.2|Bound=0.4]"),
-					"NormalPitch", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.02|Bound=0.04]")
-				);
-			
-				mobility.SetPositionAllocator ("ns3::RandomBoxPositionAllocator",
-					"X", StringValue ("ns3::UniformRandomVariable[Min=0|Max=0]"),
-					"Y", StringValue ("ns3::UniformRandomVariable[Min=0|Max=0]"),
-					"Z", StringValue ("ns3::UniformRandomVariable[Min=0|Max=0]")
-				);
- 
+        std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(velocity) + "]";
+        mobility.SetMobilityModel (
+            "ns3::RandomWalk2dMobilityModel",
+            "Mode", StringValue ("Time"),
+            "Time", StringValue ("10s"),
+            "Speed", StringValue (_speed),
+            "Bounds", StringValue ("0|" + std::to_string(distance) + "|0|" + std::to_string(distance))
+        );
+          
+        mobility.SetPositionAllocator ("ns3::RandomBoxPositionAllocator",
+            "X", StringValue ("ns3::UniformRandomVariable[Min="+std::to_string(distance)+"|Max=0]"),
+            "Y", StringValue ("ns3::UniformRandomVariable[Min=0|Max=0]"),
+            "Z", StringValue ("ns3::UniformRandomVariable[Min=0|Max=0]")
+        );
+
         mobility.Install (receivingNodes);
 
 
@@ -346,12 +342,12 @@ void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivin
         constantPositionMobility.Install (initiatingNodes);
         Ptr<ConstantPositionMobilityModel> m1 = initiatingNodes.Get(0)->GetObject<ConstantPositionMobilityModel>();
         m1->DoSetPosition(Vector (0, 0, 0));
-    }
+  }
 
-		else {
-			  std::cout << "invalid mobility model, can't configure it!" << std::endl;
-        return;
-		}
+      else {
+          std::cout << "invalid mobility model, can't configure it!" << std::endl;
+          return;
+      }
 }
 
 // Creates the nodes infrastructure, configures them according to configuration param, assigns mobility models according to mobility_mode param

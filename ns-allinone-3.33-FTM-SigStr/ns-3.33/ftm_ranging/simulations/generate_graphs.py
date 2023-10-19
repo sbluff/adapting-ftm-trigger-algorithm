@@ -12,7 +12,7 @@ from matplotlib.ticker import FormatStrFormatter
 #used for generating graphs
 sampled_distance = 10
 
-matplotlib.style.use('ggplot')
+matplotlib.style.use('seaborn-v0_8')
 
 def createStdDeviationGraph(simulation, df):
     path = './' + simulation + '/parameter_study'
@@ -151,7 +151,7 @@ def createSpecificGraphs(simulation, df):
 #studies the different distributions of the error for different meassurements_type
 def createParamStudyGraphs(df):
     path = './data/parameter_study/'
-    sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'gauss_markov']
+    sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'brownian']
     
     parameters = ['burst_exponent', 'ftm_per_burst']
     for parameter in parameters:
@@ -224,7 +224,7 @@ def violinPlots(df):
     graphs = ['error', 'channel_time', 'channel_usage']
     for graph in graphs:
         path = './data/parameter_study/'
-        sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'gauss_markov']
+        sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'brownian']
         for type in sim_types:        
             pdf_name = path + type + "-" + graph + "-violin-plot.pdf"
             _data = df.loc[(df.meassurement_type == type)]
@@ -239,7 +239,7 @@ def violinPlots(df):
 
 def channelEfficiencyGraphs(df):
     path = './data/parameter_study/'
-    sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'gauss_markov']
+    sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'brownian']
     
     parameters = ['burst_exponent', 'ftm_per_burst']
     for parameter in parameters:
@@ -267,12 +267,48 @@ def channelEfficiencyGraphs(df):
         plt.ylabel("Frequency(#)")    
         plt.savefig(path + parameter + "_efficiency.pdf")
         plt.clf()
-  
+
+def velocityComparison(df):
+    simulation_types = ['circle_velocity', 'brownian']
+    
+    for simulation in simulation_types:
+        counter = 0
+        fig, axes = plt.subplots(2,2, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        ax = axes.ravel()
+        hist = df.loc[(df.meassurement_type == simulation)]
+        
+        velocities = hist['velocity'].unique()
+        print(velocities)
+        path = './data/parameter_study/' + simulation
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        
+        
+        for value in velocities:
+            print(value)
+            hist = df.loc[(df.velocity == value) & (df.meassurement_type == simulation)]
+            print(hist.size)
+            hist['error'].hist(range=[-10,10], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=50,alpha=0.5)   
+            ax[counter].legend()
+            # ax[counter].set_title(value + ' for ' + simulation, fontsize = 15)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            counter += 1   
+        plt.xlabel('Error')
+        plt.ylabel("Frequency")
+        plt.title("Different velocities for " + simulation)
+        plt.legend()
+        plt.savefig(path + '/' + simulation + '-velocity-histograms.pdf')
+        
+        plt.clf()
+    
+        
 df = pd.read_csv('./data/data.csv')
 createParamStudyGraphs(df)
 parameterValueGraphs(df)
 channelEfficiencyGraphs(df)
 violinPlots(df)
+velocityComparison(df)
 # simulation_type = [ f.path for f in os.scandir('./') if f.is_dir() ]
 # for simulation in simulation_type:
 #     if "data" not in simulation:
