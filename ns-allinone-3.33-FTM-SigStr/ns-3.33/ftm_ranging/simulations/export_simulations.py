@@ -30,10 +30,8 @@ with open('./data/data.csv', 'w+', newline='') as csvfile:
             files = sorted(glob.glob(parameter_config + "/*m"))
             for file in files:
                 print(file)
-                curr_distance = int(file.split('/').pop().rstrip(file.split('/').pop()[-1]))
                 if not file_is_empty(file):
                     curr_measurement = np.loadtxt(file)
-                    print(curr_measurement)
                     for m in curr_measurement:
                         value = int(m[1]) / 2 / (10000 * 0.3)
                         channel_usage = abs(float(m[4]/m[3])*100)
@@ -44,8 +42,8 @@ with open('./data/data.csv', 'w+', newline='') as csvfile:
                             'min_delta_ftm': parameters[0],'burst_period': parameters[1],
                             'burst_exponent': parameters[2],'burst_duration': parameters[3],
                             'ftm_per_burst':parameters[4],
-                            'error': value-curr_distance,
-                            'session_time': m[3], 
+                            'error': value-m[0],
+                            'session_time': abs(m[3]), 
                             'channel_time': abs(m[4]),
                             'channel_usage': channel_usage,
                             'efficiency':1/(float(channel_usage * abs(value-m[0]))) if value-m[0] else 0,
