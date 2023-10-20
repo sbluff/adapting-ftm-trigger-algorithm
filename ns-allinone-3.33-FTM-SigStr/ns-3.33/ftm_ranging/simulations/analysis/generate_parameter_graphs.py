@@ -12,8 +12,9 @@ def errorHistograms(df):
     path = './parameter/'
     sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'brownian']
     
-    parameters = ['burst_exponent', 'ftm_per_burst']
+    parameters = ['burst_exponent', 'ftm_per_burst', 'burst_period', 'burst_duration']
     for parameter in parameters:
+        print(parameter)
         values = df[parameter].unique()
         fig, axes = plt.subplots(2,2, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
         ax = axes.ravel()
@@ -23,10 +24,16 @@ def errorHistograms(df):
             for value in values:
                 if parameter == 'ftm_per_burst':
                     hist = df.loc[(df.ftm_per_burst == value) &  (df.simulation_type == sim_type)]
-                    hist['error'].hist(range=[-10,10], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                    hist['error'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
                 elif parameter == 'burst_exponent':
                     hist = df.loc[(df.burst_exponent == value) &  (df.simulation_type == sim_type)]
-                    hist['error'].hist(range=[-10,10], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                    hist['error'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)
+                elif parameter == 'burst_duration':
+                    hist = df.loc[(df.burst_duration == value) &  (df.simulation_type == sim_type)]
+                    hist['error'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                elif parameter == 'burst_period':
+                    hist = df.loc[(df.burst_period == value) &  (df.simulation_type == sim_type)]
+                    hist['error'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)            
             ax[counter].legend()
             ax[counter].set_xlim(-10, 10)
             ax[counter].set_title('Error for ' + sim_type, fontsize = 15)
@@ -44,7 +51,7 @@ def channelEfficiencyHistograms(df):
     path = './parameter/'
     sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'brownian']
     
-    parameters = ['burst_exponent', 'ftm_per_burst']
+    parameters = ['burst_exponent', 'ftm_per_burst', 'burst_duration', 'burst_period']
     for parameter in parameters:
         values = df[parameter].unique()
         fig, axes = plt.subplots(2,2, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
@@ -55,10 +62,16 @@ def channelEfficiencyHistograms(df):
             for value in values:
                 if parameter == 'ftm_per_burst':
                     hist = df.loc[(df.ftm_per_burst == value) &  (df.simulation_type == sim_type)]
-                    hist['efficiency'].hist(range=[0, 200], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                    hist['efficiency'].hist(range=[0, 200], edgecolor='black', density="True", ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
                 elif parameter == 'burst_exponent':
                     hist = df.loc[(df.burst_exponent == value) &  (df.simulation_type == sim_type)]
-                    hist['efficiency'].hist(range=[0, 200], edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                    hist['efficiency'].hist(range=[0, 200], edgecolor='black', density="True", ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)
+                elif parameter == 'burst_duration':
+                    hist = df.loc[(df.burst_duration == value) &  (df.simulation_type == sim_type)]
+                    hist['efficiency'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                elif parameter == 'burst_period':
+                    hist = df.loc[(df.burst_period == value) &  (df.simulation_type == sim_type)]
+                    hist['efficiency'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)                  
             ax[counter].legend()
             ax[counter].set_title('Channel efficiency for ' + sim_type, fontsize = 15)
             ax[counter].tick_params(axis='both', which='minor', labelsize=14)
@@ -70,10 +83,10 @@ def channelEfficiencyHistograms(df):
         print(path + parameter + '/' + "channel_efficiency.pdf")
         plt.clf()           
 
-circle_mean_data = pd.read_csv('data-circle_mean.csv')    
-circle_velocity_data = pd.read_csv('data-circle_velocity.csv')    
-fix_position_data = pd.read_csv('data-fix_position.csv')    
-brownian_data = pd.read_csv('data-brownian.csv')   
+circle_mean_data = pd.read_csv('../data/data-circle_mean.csv')    
+circle_velocity_data = pd.read_csv('../data/data-circle_velocity.csv')    
+fix_position_data = pd.read_csv('../data/data-fix_position.csv')    
+brownian_data = pd.read_csv('../data/data-brownian.csv')   
 all_data = pd.concat([circle_mean_data, circle_velocity_data, fix_position_data, brownian_data]) #merge all data in a data frame
 
 
