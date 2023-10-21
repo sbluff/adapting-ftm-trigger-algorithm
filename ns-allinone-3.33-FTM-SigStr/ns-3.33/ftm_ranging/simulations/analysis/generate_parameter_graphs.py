@@ -42,6 +42,10 @@ def errorHistograms(df):
             counter = counter + 1
         plt.xlabel('Error(m)')
         plt.ylabel("Frequency(#)") 
+        
+        if not os.path.isdir(path + parameter):
+            os.makedirs(path + parameter)
+            
         plt.savefig(path + parameter + "/error_histogram.pdf")
         print(path + parameter + "/error_histogram.pdf")
         plt.clf()
@@ -68,10 +72,10 @@ def channelEfficiencyHistograms(df):
                     hist['efficiency'].hist(range=[0, 200], edgecolor='black', density="True", ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)
                 elif parameter == 'burst_duration':
                     hist = df.loc[(df.burst_duration == value) &  (df.simulation_type == sim_type)]
-                    hist['efficiency'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
+                    hist['efficiency'].hist(range=[-10,2000], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)  
                 elif parameter == 'burst_period':
                     hist = df.loc[(df.burst_period == value) &  (df.simulation_type == sim_type)]
-                    hist['efficiency'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)                  
+                    hist['efficiency'].hist(range=[-10,2000], density="True", edgecolor='black', ax = ax[counter], grid=True, label=value, bins=80, alpha=0.5)                  
             ax[counter].legend()
             ax[counter].set_title('Channel efficiency for ' + sim_type, fontsize = 15)
             ax[counter].tick_params(axis='both', which='minor', labelsize=14)
@@ -79,6 +83,10 @@ def channelEfficiencyHistograms(df):
             counter = counter + 1
         plt.xlabel('Efficiency meassurement( 1/(m*s) )')
         plt.ylabel("Frequency(#)")    
+        
+        if not os.path.isdir(path + parameter):
+            os.makedirs(path + parameter)
+            
         plt.savefig(path + parameter + '/' + "channel_efficiency.pdf")
         print(path + parameter + '/' + "channel_efficiency.pdf")
         plt.clf()           

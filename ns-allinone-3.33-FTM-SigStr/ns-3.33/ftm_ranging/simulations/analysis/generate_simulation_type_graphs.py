@@ -49,10 +49,11 @@ def velocityViolinPlots(df, simulation_type):
                 
                 if hist.size != 0:
                     sns.set(style="whitegrid")    
-                    sns.violinplot(data = hist, x = parameter, y = field, hue = 'velocity')               
+                    sns.violinplot(data = hist, x = parameter, grid=True, y = field, hue = 'velocity')               
                         
                     plt.xlabel(parameter)
                     plt.ylabel(field)    
+                    plt.title(str(combination))
                     plt.savefig(pdf_name)
                     print(pdf_name)
                     # plt.show()
@@ -63,11 +64,10 @@ def velocityViolinPlots(df, simulation_type):
         # print('------')    
 
 # creates violin plots comparing parameters and data fields separating it by velocity
-def staticViolinPlots(df, simulation_type):
+def staticHistograms(df, simulation_type):
     path = './simulation_type/' + simulation_type + '/'     
     parameters = ['ftm_per_burst', 'burst_duration', 'burst_period', 'burst_exponent']
     result_fields = ['error', 'channel_time', 'channel_usage', 'session_time']
-    conditions = ['velocity']
     
     for parameter in parameters:
         iterable_parameters = copy.deepcopy(parameters)
@@ -89,11 +89,11 @@ def staticViolinPlots(df, simulation_type):
                     # print(hist.size)
                 
                 if hist.size != 0:
-                    sns.set(style="whitegrid")    
-                    sns.violinplot(data = hist, x = parameter, y = field, hue = 'velocity')               
-                        
+                    values = df[parameter].unique()
+                    sns.violinplot(data = hist, x = parameter, grid=True, y = field)
                     plt.xlabel(parameter)
                     plt.ylabel(field)    
+                    plt.title(str(combination))
                     plt.savefig(pdf_name)
                     print(pdf_name)
                     # plt.show()
@@ -108,6 +108,6 @@ all_data = pd.concat([circle_mean_data, circle_velocity_data, fix_position_data,
 
 velocityViolinPlots(brownian_data, 'brownian')
 velocityViolinPlots(circle_velocity_data, 'circle_velocity')
-staticViolinPlots(fix_position_data, 'fix_position')
-staticViolinPlots(circle_mean_data, 'circle_mean')
+staticHistograms(fix_position_data, 'fix_position')
+staticHistograms(circle_mean_data, 'circle_mean')
 print("Done...")
