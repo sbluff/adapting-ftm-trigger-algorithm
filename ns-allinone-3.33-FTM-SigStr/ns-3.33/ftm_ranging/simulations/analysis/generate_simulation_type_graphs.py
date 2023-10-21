@@ -6,43 +6,98 @@ import os
 import json
 import matplotlib
 from matplotlib.ticker import FormatStrFormatter
+import copy
+import itertools
+
+
+def generateDataStructure(iterable_params, df):
+    data = {}
+    for param in iterable_params:
+        data[param] = df[param].unique()
+    
+    keys, values = zip(*data.items())    
+    permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
+    
+    return permutations_dicts    
 
 #¢reates violin plots for the specified data fields
-def violinPlots(df):
-    params = ['error', 'channel_time', 'channel_usage', 'session_time']
-    for param in params:
-        sim_types = ['fix_position', 'circle_mean', 'circle_velocity', 'brownian']
-        for type in sim_types:        
-            path = './simulation_type/' + type + '/'
-            pdf_name = path + param + "_violin_plot.pdf"
-            _data = df.loc[(df.simulation_type == type)]
-            sns.set(style="whitegrid")        
-            sns.violinplot(data = _data, x = 'burst_exponent', y = param, hue = 'ftm_per_burst')               
-            plt.xlabel('burst_exponent')
-            plt.ylabel(param)    
-            plt.savefig(pdf_name)
-            print(pdf_name)
-            plt.clf()         
-
-#creates violin plots comparing parameters and data fields separating it by velocity
-def velocityViolinComparison(df, simulation_type):
-    params = ['error', 'channel_time', 'channel_usage']
-    fields = ['ftm_per_burst', 'burst_exponent', 'burst_duration', 'burst_period']
-    df['velocity'].unique()
-    for param in params:
-        for field in fields:
-            path = './simulation_type/' + simulation_type + '/velocities/'
-            pdf_name = path + param + "-" + field + "_violin_plot.pdf"
-            sns.set(style="whitegrid")    
-            sns.violinplot(data = df, x = 'velocity', y = param, hue = field)               
+def velocityViolinPlots(df, simulation_type):
+    
+    path = './simulation_type/' + simulation_type + '/'     
+    parameters = ['ftm_per_burst', 'burst_duration', 'burst_period', 'burst_exponent']
+    result_fields = ['error', 'channel_time', 'channel_usage', 'session_time']
+    conditions = ['velocity']
+    
+    for parameter in parameters:
+        iterable_parameters = copy.deepcopy(parameters)
+        iterable_parameters.remove(parameter)
+        all_combinations = generateDataStructure(iterable_parameters, df)  
+        for field in result_fields:
+            file_path = path + parameter + '-' + field + '/'
+            
+            if not os.path.isdir(file_path):
+                os.makedirs(file_path)
+            
+            for combination in all_combinations:
+                # file_path = path + dumps(combination) + '.pdf'
+                pdf_name = file_path + str(combination).replace(" ", "")+".pdf" 
+                hist = df
+                # print(combination)
+                for x in combination:
+                    hist = hist[hist[x] == combination[x]]
+                    # print(hist.size)
                 
-            plt.xlabel('velocity')
-            plt.ylabel(param)    
-            plt.savefig(pdf_name)
-            print(pdf_name)
-            # plt.show()
-            plt.clf()       
-          
+                if hist.size != 0:
+                    sns.set(style="whitegrid")    
+                    sns.violinplot(data = hist, x = parameter, y = field, hue = 'velocity')               
+                        
+                    plt.xlabel(parameter)
+                    plt.ylabel(field)    
+                    plt.savefig(pdf_name)
+                    print(pdf_name)
+                    # plt.show()
+                    plt.clf() 
+                        
+        # for key, value in combinations.items():
+        #     print(key, "->", value)
+        # print('------')    
+
+# creates violin plots comparing parameters and data fields separating it by velocity
+def staticViolinPlots(df, simulation_type):
+    path = './simulation_type/' + simulation_type + '/'     
+    parameters = ['ftm_per_burst', 'burst_duration', 'burst_period', 'burst_exponent']
+    result_fields = ['error', 'channel_time', 'channel_usage', 'session_time']
+    conditions = ['velocity']
+    
+    for parameter in parameters:
+        iterable_parameters = copy.deepcopy(parameters)
+        iterable_parameters.remove(parameter)
+        all_combinations = generateDataStructure(iterable_parameters, df)  
+        for field in result_fields:
+            file_path = path + parameter + '-' + field + '/'
+            
+            if not os.path.isdir(file_path):
+                os.makedirs(file_path)
+            
+            for combination in all_combinations:
+                # file_path = path + dumps(combination) + '.pdf'
+                pdf_name = file_path + str(combination).replace(" ", "")+".pdf" 
+                hist = df
+                # print(combination)
+                for x in combination:
+                    hist = hist[hist[x] == combination[x]]
+                    # print(hist.size)
+                
+                if hist.size != 0:
+                    sns.set(style="whitegrid")    
+                    sns.violinplot(data = hist, x = parameter, y = field, hue = 'velocity')               
+                        
+                    plt.xlabel(parameter)
+                    plt.ylabel(field)    
+                    plt.savefig(pdf_name)
+                    print(pdf_name)
+                    # plt.show()
+                    plt.clf()
 
 
 circle_mean_data = pd.read_csv('../data/data-circle_mean.csv')    
@@ -51,7 +106,8 @@ fix_position_data = pd.read_csv('../data/data-fix_position.csv')
 brownian_data = pd.read_csv('../data/data-brownian.csv')   
 all_data = pd.concat([circle_mean_data, circle_velocity_data, fix_position_data, brownian_data]) #merge all data in a data frame
 
-violinPlots(all_data)
-velocityViolinComparison(brownian_data, 'brownian')
-velocityViolinComparison(circle_velocity_data, 'circle_velocity')
+velocityViolinPlots(brownian_data, 'brownian')
+velocityViolinPlots(circle_velocity_data, 'circle_velocity')
+staticViolinPlots(fix_position_data, 'fix_position')
+staticViolinPlots(circle_mean_data, 'circle_mean')
 print("Done...")
