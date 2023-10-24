@@ -57,7 +57,7 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("FtmRanging");
 
 int session_counter = 0;
-int measurements_per_distance = 2000;
+int measurements_per_distance = 100;
 int max_sampling_distance = 10;
 int step = 5;
 double velocity = 0;
@@ -180,7 +180,7 @@ void SessionOver (FtmSession session)
 			final_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
 
     t2 =  Simulator::Now().GetSeconds();
-    std::string file_path = "./ftm_ranging/simulations/" + mobility_model + "/" + std::to_string(int(min_delta_ftm)) + '-' + std::to_string(int(burst_duration)) + '-' + std::to_string(int(burst_exponent)) + '-' + std::to_string(int(burst_period)) + '-' + std::to_string(int(ftm_per_burst)) + '/';
+    std::string file_path = "./ftm_ranging/simulations/data/" + mobility_model + "/" + std::to_string(int(min_delta_ftm)) + '-' + std::to_string(int(burst_duration)) + '-' + std::to_string(int(burst_exponent)) + '-' + std::to_string(int(burst_period)) + '-' + std::to_string(int(ftm_per_burst)) + '/';
     file_name =  file_path + std::to_string(int(distance)) + 'm';
     //create folder for files
     const char* str = file_path.c_str();
@@ -188,7 +188,6 @@ void SessionOver (FtmSession session)
 
     std::list<int64_t> rtts = session.GetIndividualRTT();
     std::list<double> sig_strs = session.GetIndividualSignalStrength();
-
     std::ofstream output (file_name, std::ofstream::out | std::ofstream::app);
     int64_t total_rtt = 0;
     double mean_sig_str = 0;
@@ -248,22 +247,89 @@ void SessionOver (FtmSession session)
 
 //loads into configurations the set of parameters that will be used during each one of the mobility_model simulations
 void loadConfigurations(std::vector<std::vector<int>>& configurations){
-  configurations.push_back({15,10,1,10,2});
-  configurations.push_back({15,10,1,10,3});
-  configurations.push_back({15,10,1,10,4});
-  configurations.push_back({15,10,1,10,5});
-  configurations.push_back({15,10,2,10,2});
-  configurations.push_back({15,10,2,10,3});
-  configurations.push_back({15,10,2,10,4});
-  configurations.push_back({15,10,2,10,5});  
-  configurations.push_back({15,10,3,10,2});
-  configurations.push_back({15,10,3,10,3});
-  configurations.push_back({15,10,3,10,4});
-  configurations.push_back({15,10,3,10,5});
-  configurations.push_back({15,10,4,10,2});
-  configurations.push_back({15,10,4,10,3});
-  configurations.push_back({15,10,4,10,4});
-  configurations.push_back({15,10,4,10,5});
+  // configurations.push_back({15,7,1,5,2});
+  // configurations.push_back({15,7,1,5,3});
+  // configurations.push_back({15,7,1,5,4});
+  // configurations.push_back({15,7,1,5,5});
+  configurations.push_back({15,7,3,5,2});
+  configurations.push_back({15,7,3,5,3});
+  configurations.push_back({15,7,3,5,4});
+  configurations.push_back({15,7,3,6,2});
+  configurations.push_back({15,7,3,6,3});
+  configurations.push_back({15,7,3,6,4});
+  configurations.push_back({15,7,3,7,2});
+  configurations.push_back({15,7,3,7,3});
+  configurations.push_back({15,7,3,7,4});
+  configurations.push_back({15,7,3,8,2});
+  configurations.push_back({15,7,3,8,3});
+  configurations.push_back({15,7,3,8,4});
+  configurations.push_back({15,7,3,9,2});
+  configurations.push_back({15,7,3,9,3});
+  configurations.push_back({15,7,3,9,4});
+  configurations.push_back({15,7,3,10,2});
+  configurations.push_back({15,7,3,10,3});
+  configurations.push_back({15,7,3,10,4});
+  
+  configurations.push_back({15,8,3,5,2});
+  configurations.push_back({15,8,3,5,3});
+  configurations.push_back({15,8,3,5,4});
+  configurations.push_back({15,8,3,6,2});
+  configurations.push_back({15,8,3,6,3});
+  configurations.push_back({15,8,3,6,4});
+  configurations.push_back({15,8,3,7,2});
+  configurations.push_back({15,8,3,7,3});
+  configurations.push_back({15,8,3,7,4});
+  configurations.push_back({15,8,3,8,2});
+  configurations.push_back({15,8,3,8,3});
+  configurations.push_back({15,8,3,8,4});
+  configurations.push_back({15,8,3,9,2});
+  configurations.push_back({15,8,3,9,3});
+  configurations.push_back({15,8,3,9,4});
+  configurations.push_back({15,8,3,10,2});
+  configurations.push_back({15,8,3,10,3});
+  configurations.push_back({15,8,3,10,4});
+
+  configurations.push_back({15,9,3,5,2});
+  configurations.push_back({15,9,3,5,3});
+  configurations.push_back({15,9,3,5,4});
+  configurations.push_back({15,9,3,5,5});
+  configurations.push_back({15,9,3,6,2});
+  configurations.push_back({15,9,3,6,3});
+  configurations.push_back({15,9,3,6,4});
+  configurations.push_back({15,9,3,6,5});
+  configurations.push_back({15,9,3,7,2});
+  configurations.push_back({15,9,3,7,3});
+  configurations.push_back({15,9,3,7,4});
+  configurations.push_back({15,9,3,7,5});
+  configurations.push_back({15,9,3,8,2});
+  configurations.push_back({15,9,3,8,3});
+  configurations.push_back({15,9,3,8,4});
+  configurations.push_back({15,9,3,8,5});
+  configurations.push_back({15,9,3,9,2});
+  configurations.push_back({15,9,3,9,3});
+  configurations.push_back({15,9,3,9,4});
+  configurations.push_back({15,9,3,9,5});
+  configurations.push_back({15,9,3,10,2});
+  configurations.push_back({15,9,3,10,3});
+  configurations.push_back({15,9,3,10,4});
+  configurations.push_back({15,9,3,10,5});
+
+  // configurations.push_back({15,8,1,5,2});
+  // configurations.push_back({15,8,1,5,3});
+  configurations.push_back({15,9,1,5,4});
+  // configurations.push_back({15,8,1,5,5});
+  // configurations.push_back({15,10,2,10,2});
+  // configurations.push_back({15,10,2,10,3});
+  // configurations.push_back({15,10,2,10,4});
+  // configurations.push_back({15,10,2,10,5});  
+  // configurations.push_back({15,10,3,10,2});
+  // configurations.push_back({15,10,3,10,3});
+  // configurations.push_back({15,10,3,10,4});
+  // configurations.push_back({15,10,3,10,5});
+  // configurations.push_back({15,10,4,10,2});
+  // configurations.push_back({15,10,4,10,3});
+  // configurations.push_back({15,10,4,10,4});
+  // configurations.push_back({15,10,4,10,5});
 }
 
 //loads in models the type of simulations that will take place
@@ -271,14 +337,22 @@ void loadModels(std::vector<std::string>& models){
   // models.push_back("test");
   models.push_back("brownian");
   // models.push_back("circle_mean");
-  // models.push_back("circle_velocity");
+  models.push_back("circle_velocity");
   // models.push_back("fix_position");
 }
 
+//loads in velocities the velocities at which brownian & circle_velocity models will be simulated
+void loadVelocities(std::vector<float>& velocities){
+  velocities.push_back(1.26111);
+  velocities.push_back(1.534);
+  velocities.push_back(2.223);
+  velocities.push_back(3.5);
+}
+
 //based on mobility_mode variable this function assigns the container different mobility modes and sets its parameters
-void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivingNodes, std::string mobility_model){
+void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivingNodes, std::string mobility_model, const float& _velocity){
     if (mobility_model == "circle_velocity"){
-				velocity = 3.5;
+				velocity = _velocity;
         MobilityHelper circularMobility;
         circularMobility.SetMobilityModel ("ns3::CircleMobilityModel");
         circularMobility.Install (receivingNodes);
@@ -317,7 +391,7 @@ void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivin
     }
 
     else if (mobility_model == "brownian"){
-        velocity = 2.223;
+        velocity = _velocity;
         MobilityHelper mobility;
         std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(velocity) + "]";
         mobility.SetMobilityModel (
@@ -344,18 +418,18 @@ void assignMobilityModel(NodeContainer& initiatingNodes, NodeContainer& receivin
         m1->DoSetPosition(Vector (0, 0, 0));
   }
 
-      else {
-          std::cout << "invalid mobility model, can't configure it!" << std::endl;
-          return;
-      }
+    else {
+        std::cout << "invalid mobility model, can't configure it!" << std::endl;
+        return;
+    }
 }
 
 // Creates the nodes infrastructure, configures them according to configuration param, assigns mobility models according to mobility_mode param
 // then runs simulator
-void runSimulation(const std::vector<int>& configuration){
+void runSimulation(const std::vector<int>& configuration, const float& velocity){
     ///////// PARAMETERS
     configuration_finished = false;
-    std::cout << "New config" << std::endl;
+    std::cout << std::to_string(configuration[0]) << " " << std::to_string(configuration[1]) << " " << std::to_string(configuration[2]) << " " << std::to_string(configuration[3]) << " " << std::to_string(configuration[4]) << std::endl;
     min_delta_ftm = configuration[0];
     burst_duration = configuration[1];
     burst_exponent = configuration[2];
@@ -371,7 +445,7 @@ void runSimulation(const std::vector<int>& configuration){
     initiatingNodesContainer.Create (1);
     receivingNodesContainer.Create (1);
 
-    assignMobilityModel(initiatingNodesContainer, receivingNodesContainer, mobility_model);
+    assignMobilityModel(initiatingNodesContainer, receivingNodesContainer, mobility_model, velocity);
 
     WifiHelper wifi;
     wifi.SetStandard (WIFI_STANDARD_80211n_2_4GHZ);
@@ -452,13 +526,22 @@ int main (int argc, char *argv[])
   std::vector<std::vector<int>> configurations;
   loadConfigurations(configurations);
 
+  std::vector<float> velocities;
+  loadVelocities(velocities);
+
   std::vector<std::string> models;
   loadModels(models);
-  for (unsigned i = 0; i < models.size(); i++)
-    for (unsigned j = 0; j < configurations.size(); j++){
-        distance = 10;
-        mobility_model = models[i];
-        runSimulation(configurations[j]);
+
+  for (unsigned i = 0; i < models.size(); i++){
+    std::cout << models[i] << std::endl;
+    for (unsigned j = 0; j < velocities.size(); j++){
+      std::cout << velocities[j] << std::endl;
+      for (unsigned t = 0; t < configurations.size(); t++){
+          distance = 10;
+          mobility_model = models[i];
+          runSimulation(configurations[t], velocities[j]);
+      }
     }
+  }
   return 0;
 }
