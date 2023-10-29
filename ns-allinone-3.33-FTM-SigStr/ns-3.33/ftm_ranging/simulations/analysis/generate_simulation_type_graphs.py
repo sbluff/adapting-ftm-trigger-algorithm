@@ -112,7 +112,7 @@ def staticViolinPlots(df, simulation_type):
                     print(pdf_name)
                     # plt.show()
                     plt.clf()
-        counter += 1            
+            counter += 1            
 
 
 circle_mean_data = pd.read_csv('../data/data-circle_mean.csv')    
