@@ -57,7 +57,7 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("FtmRanging");
 
 int session_counter = 0;
-int measurements_per_distance = 100;
+int measurements_per_distance = 50;
 int max_sampling_distance = 10;
 int step = 5;
 double velocity = 0;
@@ -112,12 +112,6 @@ void changeRadius(Ptr<Node> sta, double radius){
     if (mobility_model == "fix_position"){
       Ptr<MobilityModel> mobility_ap = _ap->GetNode()->GetObject<MobilityModel>();
       Ptr<MobilityModel> mobility = sta->GetObject<MobilityModel>();
-
-      std::cout << "----------------------------" << std::endl;
-      std::cout << mobility->GetPosition().x << mobility->GetPosition().y << std::endl; 
-      std::cout << mobility_ap->GetPosition().x << " " << mobility_ap->GetPosition().y << std::endl;
-      std::cout << "----------------------------" << std::endl;
-
       mobility->SetPosition(Vector(distance, 0, 0));
     }
 
@@ -205,11 +199,6 @@ void SessionOver (FtmSession session)
 				if (mobility_model == "brownian"){
 					Vector middle_position = Vector ((final_position.x+initial_position.x)/2, (final_position.y+initial_position.y)/2, (final_position.z+initial_position.z)/2);
 					expected_distance = CalculateDistance(middle_position, Vector(0,0,0));
-					// std::cout << "----------------------------" << std::endl;
-					// std::cout << "intial_position: " << initial_position.x << " " << initial_position.y << " " << initial_position.z << std::endl;
-					// std::cout << "final_position: " << final_position.x << " " << final_position.y << " " << final_position.z << std::endl;
-					// std::cout << "middle_position: " << middle_position.x << " " << middle_position.y << " " << middle_position.z << std::endl;
-					// std::cout << "distance: " << expected_distance << std::endl;
 				}
 				else
 					expected_distance = distance;
@@ -239,76 +228,111 @@ void SessionOver (FtmSession session)
     }
 
   }
-
-  else{
-
-  }
 }
 
 //loads into configurations the set of parameters that will be used during each one of the mobility_model simulations
 void loadConfigurations(std::vector<std::vector<int>>& configurations){
-  // configurations.push_back({15,7,1,5,2});
-  // configurations.push_back({15,7,1,5,3});
-  // configurations.push_back({15,7,1,5,4});
-  // configurations.push_back({15,7,1,5,5});
+  configurations.push_back({15,7,1,5,1});
+  configurations.push_back({15,7,1,5,2});
+  configurations.push_back({15,7,1,5,3});
+  configurations.push_back({15,7,1,5,4});
+
+  configurations.push_back({15,7,2,5,1});
+  configurations.push_back({15,7,2,5,2});
+  configurations.push_back({15,7,2,5,3});
+  configurations.push_back({15,7,2,5,4});
+
+  configurations.push_back({15,7,3,5,1});
   configurations.push_back({15,7,3,5,2});
   configurations.push_back({15,7,3,5,3});
   configurations.push_back({15,7,3,5,4});
+
+  configurations.push_back({15,7,3,6,1});
   configurations.push_back({15,7,3,6,2});
   configurations.push_back({15,7,3,6,3});
   configurations.push_back({15,7,3,6,4});
+
+  configurations.push_back({15,7,3,7,1});
   configurations.push_back({15,7,3,7,2});
   configurations.push_back({15,7,3,7,3});
   configurations.push_back({15,7,3,7,4});
+
+  configurations.push_back({15,7,3,8,1});
   configurations.push_back({15,7,3,8,2});
   configurations.push_back({15,7,3,8,3});
   configurations.push_back({15,7,3,8,4});
+
+  configurations.push_back({15,7,3,9,1});
   configurations.push_back({15,7,3,9,2});
   configurations.push_back({15,7,3,9,3});
   configurations.push_back({15,7,3,9,4});
+
+  configurations.push_back({15,7,3,10,1});
   configurations.push_back({15,7,3,10,2});
   configurations.push_back({15,7,3,10,3});
   configurations.push_back({15,7,3,10,4});
   
+  configurations.push_back({15,8,3,5,1});
   configurations.push_back({15,8,3,5,2});
   configurations.push_back({15,8,3,5,3});
   configurations.push_back({15,8,3,5,4});
+
+  configurations.push_back({15,8,3,6,1});
   configurations.push_back({15,8,3,6,2});
   configurations.push_back({15,8,3,6,3});
   configurations.push_back({15,8,3,6,4});
+
+  configurations.push_back({15,8,3,7,1});
   configurations.push_back({15,8,3,7,2});
   configurations.push_back({15,8,3,7,3});
   configurations.push_back({15,8,3,7,4});
+
+  configurations.push_back({15,8,3,8,1});
   configurations.push_back({15,8,3,8,2});
   configurations.push_back({15,8,3,8,3});
   configurations.push_back({15,8,3,8,4});
+
+  configurations.push_back({15,8,3,9,1});
   configurations.push_back({15,8,3,9,2});
   configurations.push_back({15,8,3,9,3});
   configurations.push_back({15,8,3,9,4});
+
+  configurations.push_back({15,8,3,10,1});
   configurations.push_back({15,8,3,10,2});
   configurations.push_back({15,8,3,10,3});
   configurations.push_back({15,8,3,10,4});
 
+  configurations.push_back({15,9,3,5,1});
   configurations.push_back({15,9,3,5,2});
   configurations.push_back({15,9,3,5,3});
   configurations.push_back({15,9,3,5,4});
   configurations.push_back({15,9,3,5,5});
+
+  configurations.push_back({15,9,3,6,1});
   configurations.push_back({15,9,3,6,2});
   configurations.push_back({15,9,3,6,3});
   configurations.push_back({15,9,3,6,4});
   configurations.push_back({15,9,3,6,5});
+
+  configurations.push_back({15,9,3,7,1});
   configurations.push_back({15,9,3,7,2});
   configurations.push_back({15,9,3,7,3});
   configurations.push_back({15,9,3,7,4});
   configurations.push_back({15,9,3,7,5});
+
+  configurations.push_back({15,9,3,8,1});
   configurations.push_back({15,9,3,8,2});
   configurations.push_back({15,9,3,8,3});
   configurations.push_back({15,9,3,8,4});
   configurations.push_back({15,9,3,8,5});
+
+  configurations.push_back({15,9,3,9,1});
   configurations.push_back({15,9,3,9,2});
   configurations.push_back({15,9,3,9,3});
   configurations.push_back({15,9,3,9,4});
   configurations.push_back({15,9,3,9,5});
+
+  configurations.push_back({15,9,3,10,1});
   configurations.push_back({15,9,3,10,2});
   configurations.push_back({15,9,3,10,3});
   configurations.push_back({15,9,3,10,4});
@@ -336,9 +360,9 @@ void loadConfigurations(std::vector<std::vector<int>>& configurations){
 void loadModels(std::vector<std::string>& models){
   // models.push_back("test");
   models.push_back("brownian");
-  // models.push_back("circle_mean");
+  models.push_back("circle_mean");
   models.push_back("circle_velocity");
-  // models.push_back("fix_position");
+  models.push_back("fix_position");
 }
 
 //loads in velocities the velocities at which brownian & circle_velocity models will be simulated
