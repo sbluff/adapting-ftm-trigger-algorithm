@@ -55,7 +55,7 @@ def velocityViolinPlots(df, simulation_type):
                 
                 if hist.size != 0:
                     sns.set(style="whitegrid")    
-                    sns.violinplot(data = hist, y = field, hue = 'velocity', ylim=(-2*hist[field].mean(), 2*hist[field].mean()), x = parameter, grid=True, density_norm="area", common_norm="true")               
+                    sns.violinplot(data = hist, y = field, hue = 'velocity', cut=0, ylim=(-2*hist[field].mean(), 2*hist[field].mean()), x = parameter, grid=True, density_norm="area", common_norm="true")               
                         
                     plt.xlabel(parameter.replace("_", " "))
                     plt.ylabel(field.replace("_", " ") + " (" + result_fields_units[counter] + ")")    
@@ -121,8 +121,8 @@ fix_position_data = pd.read_csv('../data/data-fix_position.csv')
 brownian_data = pd.read_csv('../data/data-brownian.csv')   
 all_data = pd.concat([circle_mean_data, circle_velocity_data, fix_position_data, brownian_data]) #merge all data in a data frame
 
-# velocityViolinPlots(brownian_data, 'brownian')
-# velocityViolinPlots(circle_velocity_data, 'circle_velocity')
-staticViolinPlots(fix_position_data, 'fix_position')
-staticViolinPlots(circle_mean_data, 'circle_mean')
+velocityViolinPlots(brownian_data, 'brownian')
+velocityViolinPlots(circle_velocity_data, 'circle_velocity')
+# staticViolinPlots(fix_position_data, 'fix_position')
+# staticViolinPlots(circle_mean_data, 'circle_mean')
 print("Done...")
