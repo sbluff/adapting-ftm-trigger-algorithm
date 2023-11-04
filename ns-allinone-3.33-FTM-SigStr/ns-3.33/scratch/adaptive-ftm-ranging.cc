@@ -31,7 +31,7 @@ Address recvAddr;
 double t1;
 double t2; 
 int session_counter = 0;
-int measurements = 1000;
+int measurements = 20000;
 int analysis_window = 10;
 int same_state_counter = 0;
 std::vector<double> hist_rtt;
@@ -78,8 +78,8 @@ void analysis(){
             same_state_counter = 0;
             FtmParameters.burst_exponent = 1;
             FtmParameters.ftm_per_burst = 1;
-            FtmParameters.burst_duration = 7;
-            FtmParameters.burst_period = 8;
+            FtmParameters.burst_duration = 10;
+            FtmParameters.burst_period = 10;
         } 
         else if (state == "brownian") same_state_counter++;
     }
@@ -93,9 +93,9 @@ void analysis(){
     //not moving and last state was fix_position
     else if (state == "fix_position"){
         FtmParameters.burst_exponent = 1 + (same_state_counter / 10);
-        FtmParameters.ftm_per_burst = 2 + (same_state_counter/3);
-        FtmParameters.burst_duration = 7 + (same_state_counter/5);
-        FtmParameters.burst_period = 8 + (same_state_counter/2);
+        FtmParameters.ftm_per_burst = 2 + (same_state_counter/4);
+        FtmParameters.burst_duration = 10;
+        FtmParameters.burst_period = 10;
         same_state_counter++;
     }
 
@@ -105,8 +105,8 @@ void analysis(){
         same_state_counter = 0;
         FtmParameters.burst_exponent = 1;
         FtmParameters.ftm_per_burst = 1;
-        FtmParameters.burst_duration = 7;
-        FtmParameters.burst_period = 8;
+        FtmParameters.burst_duration = 10;
+        FtmParameters.burst_period = 10;
     }
 
 }
@@ -152,7 +152,7 @@ static void GenerateTraffic ()
 
 void SessionOver(FtmSession session){
     std::string file_path = "./ftm_ranging/simulations/data/adaptive-algorithm-test/";
-    std::string file_name =  file_path + "adaptive-algorithm";
+    std::string file_name =  file_path + "static-algorithm";
     t2 =  Simulator::Now().GetSeconds();
     
     //expected distance & actual distance
@@ -182,9 +182,9 @@ void SessionOver(FtmSession session){
 
     //for algorithm analysis purposes
     hist_rtt.insert(hist_rtt.begin(), double(total_rtt / count));
-    if (hist_rtt.size() > 2){
-        analysis();
-    }
+    // if (hist_rtt.size() > 2){
+    //     analysis();
+    // }
 
 	if (session_counter < measurements)
     	Simulator::Schedule(Seconds (0.001), &GenerateTraffic);
