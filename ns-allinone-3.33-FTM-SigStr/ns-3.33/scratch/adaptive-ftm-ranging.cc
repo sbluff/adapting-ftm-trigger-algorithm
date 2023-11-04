@@ -111,6 +111,9 @@ void SessionOver(FtmSession session){
     //expected distance & actual distance
     double expected_distance;
     final_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
+    std::cout << final_position.x << " " << final_position.y << " " << final_position.z << std::endl;
+    std::cout << t2 << std::endl;
+    std::cout << "-------------------------------" << std::endl;
     Vector middle_position = Vector ((final_position.x+initial_position.x)/2, (final_position.y+initial_position.y)/2, (final_position.z+initial_position.z)/2);
     expected_distance = CalculateDistance(middle_position, Vector(0,0,0));
 
@@ -130,17 +133,7 @@ void SessionOver(FtmSession session){
 
     mean_sig_str = double(mean_sig_str / count);
 
-    std::cout << file_name << std::endl;
-    std::cout << expected_distance << std::endl;
-    std::cout << total_rtt << std::endl;
-    std::cout << count << std::endl;
-    std::cout << double(total_rtt / count) << std::endl;
-    std::cout << mean_sig_str << std::endl;
-    std::cout << t2 - t1 << std::endl;
-    std::cout << double(total_rtt/(pow(10,9))) << std::endl;
-
     output << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) << " 2.5"  << "\n";
-    std::cout << "about to write12" << std::endl;
     
     output.close();
 
@@ -177,11 +170,8 @@ void initialSetUp(){
 
     // assign mobility model
 	MobilityHelper mobility;
-	std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(2.5) + "]";
-	mobility.SetMobilityModel (
-		"ns3::RandomWalk2dMobilityModel",
-		"Mode", StringValue ("Time"),
-		"Time", StringValue ("10s"),
+	std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(0.5) + "]";
+	mobility.SetMobilityModel ("ns3::RandomDirection2dMobilityModel",
 		"Speed", StringValue (_speed),
 		"Bounds", StringValue ("0|" + std::to_string(10) + "|0|" + std::to_string(10))
 	);
@@ -278,10 +268,6 @@ void runSimulation(){
 int main (int argc, char *argv[]){
 	loadFtmMap();
 	initialSetUp();
-    std::cout<<"Set up" << std::endl;
 	runSimulation();
-    std::cout<<"Simulation ran..." << std::endl;
-
-
 	return 0;
 }

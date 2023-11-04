@@ -48,7 +48,7 @@ RandomDirection2dMobilityModel::GetTypeId (void)
                    MakePointerAccessor (&RandomDirection2dMobilityModel::m_speed),
                    MakePointerChecker<RandomVariableStream> ())
     .AddAttribute ("Pause", "A random variable to control the pause (s).",
-                   StringValue ("ns3::ConstantRandomVariable[Constant=2.0]"),
+                   StringValue ("ns3::ConstantRandomVariable[Constant=20.0]"),
                    MakePointerAccessor (&RandomDirection2dMobilityModel::m_pause),
                    MakePointerChecker<RandomVariableStream> ())
   ;
