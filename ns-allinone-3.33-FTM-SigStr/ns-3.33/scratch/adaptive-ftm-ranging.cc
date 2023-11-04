@@ -18,7 +18,7 @@
 #include "ns3/mgt-headers.h"
 #include "ns3/ftm-error-model.h"
 #include "ns3/pointer.h"
-
+#include <vector>
 
 using namespace ns3;
 
@@ -32,6 +32,10 @@ double t1;
 double t2; 
 int session_counter = 0;
 int measurements = 1000;
+int analysis_window = 10;
+int same_state_counter = 0;
+std::vector<double> hist_rtt;
+std::string state = "fix_position";
 double intial_distance = 10.0;
 
 Vector initial_position = Vector(0, 0, 0); //this positions will be used for the mean 
@@ -39,10 +43,10 @@ Vector final_position = Vector(0, 0, 0);	//position in the markov meassurements
 
 struct {             
 	int min_delta_ftm = 15;         
-	int burst_period = 10;         
-	int burst_exponent = 2;         
-	int burst_duration = 10;         
-	int ftm_per_burst = 2;         
+	int burst_period = 7;         
+	int burst_exponent = 1;         
+	int burst_duration = 6;         
+	int ftm_per_burst = 1;         
 } FtmParameters; 
 
 void SessionOver (FtmSession session);
@@ -61,6 +65,50 @@ void configureFtm(FtmParams &ftm_params){
 
   ftm_params.SetPartialTsfNoPref(true);
   ftm_params.SetAsap(true);
+}
+
+
+void analysis(){
+    if (abs(hist_rtt[0]-hist_rtt[1])/hist_rtt[1] > 0.05){
+        if (state == "fix_position"){
+            state="transition";
+        } 
+        else if (state == "transition"){
+            state="brownian";
+            same_state_counter = 0;
+            FtmParameters.burst_exponent = 1;
+            FtmParameters.ftm_per_burst = 1;
+            FtmParameters.burst_duration = 7;
+            FtmParameters.burst_period = 8;
+        } 
+        else if (state == "brownian") same_state_counter++;
+    }
+
+    //not moving and last state was brownian
+    else if (state == "brownian"){
+        same_state_counter = 0;
+        state = "transition";
+    }
+
+    //not moving and last state was fix_position
+    else if (state == "fix_position"){
+        FtmParameters.burst_exponent = 1 + (same_state_counter / 10);
+        FtmParameters.ftm_per_burst = 2 + (same_state_counter/3);
+        FtmParameters.burst_duration = 7 + (same_state_counter/5);
+        FtmParameters.burst_period = 8 + (same_state_counter/2);
+        same_state_counter++;
+    }
+
+    //not moving and last state was fix_position
+    else if (state == "transition"){
+        state = "fix_position";
+        same_state_counter = 0;
+        FtmParameters.burst_exponent = 1;
+        FtmParameters.ftm_per_burst = 1;
+        FtmParameters.burst_duration = 7;
+        FtmParameters.burst_period = 8;
+    }
+
 }
 
 static void GenerateTraffic ()
@@ -96,14 +144,13 @@ static void GenerateTraffic ()
 	session->SetSessionOverCallback(MakeCallback(&SessionOver));
 	session->SessionBegin();
 		// if (mobility_model == "brownian")
-		// 	initial_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
+	initial_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
 		
 
 	t1 = Simulator::Now().GetSeconds();
 }
 
 void SessionOver(FtmSession session){
-    std::cout << "end session" << std::endl;
     std::string file_path = "./ftm_ranging/simulations/data/adaptive-algorithm-test/";
     std::string file_name =  file_path + "adaptive-algorithm";
     t2 =  Simulator::Now().GetSeconds();
@@ -111,9 +158,6 @@ void SessionOver(FtmSession session){
     //expected distance & actual distance
     double expected_distance;
     final_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
-    std::cout << final_position.x << " " << final_position.y << " " << final_position.z << std::endl;
-    std::cout << t2 << std::endl;
-    std::cout << "-------------------------------" << std::endl;
     Vector middle_position = Vector ((final_position.x+initial_position.x)/2, (final_position.y+initial_position.y)/2, (final_position.z+initial_position.z)/2);
     expected_distance = CalculateDistance(middle_position, Vector(0,0,0));
 
@@ -133,14 +177,18 @@ void SessionOver(FtmSession session){
 
     mean_sig_str = double(mean_sig_str / count);
 
-    output << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) << " 2.5"  << "\n";
-    
+    output << FtmParameters.min_delta_ftm << " " << FtmParameters.burst_period << " " << FtmParameters.burst_exponent << " " << FtmParameters.burst_duration << " " << FtmParameters.ftm_per_burst << " "  << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) << " 2.5"  << "\n";
     output.close();
+
+    //for algorithm analysis purposes
+    hist_rtt.insert(hist_rtt.begin(), double(total_rtt / count));
+    if (hist_rtt.size() > 2){
+        analysis();
+    }
 
 	if (session_counter < measurements)
     	Simulator::Schedule(Seconds (0.001), &GenerateTraffic);
     else{
-        std::cout << "configuration finished!" << std::endl;
         std::cout << "Stopping simulator..." << std::endl;
         Simulator::Stop();  
     }
@@ -170,7 +218,7 @@ void initialSetUp(){
 
     // assign mobility model
 	MobilityHelper mobility;
-	std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(0.5) + "]";
+	std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(2.5) + "]";
 	mobility.SetMobilityModel ("ns3::RandomDirection2dMobilityModel",
 		"Speed", StringValue (_speed),
 		"Bounds", StringValue ("0|" + std::to_string(10) + "|0|" + std::to_string(10))
