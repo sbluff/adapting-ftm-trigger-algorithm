@@ -38,15 +38,17 @@ std::vector<double> hist_rtt;
 std::string state = "fix_position";
 double intial_distance = 10.0;
 
+bool dynamic_mode = false;
+
 Vector initial_position = Vector(0, 0, 0); //this positions will be used for the mean 
 Vector final_position = Vector(0, 0, 0);	//position in the markov meassurements
 
 struct {             
 	int min_delta_ftm = 15;         
-	int burst_period = 7;         
-	int burst_exponent = 1;         
-	int burst_duration = 6;         
-	int ftm_per_burst = 1;         
+	int burst_period = 10;         
+	int burst_exponent = 2;         
+	int burst_duration = 10;         
+	int ftm_per_burst = 2;         
 } FtmParameters; 
 
 void SessionOver (FtmSession session);
@@ -76,8 +78,8 @@ void analysis(){
         else if (state == "transition"){
             state="brownian";
             same_state_counter = 0;
-            FtmParameters.burst_exponent = 1;
-            FtmParameters.ftm_per_burst = 1;
+            FtmParameters.burst_exponent = 2;
+            FtmParameters.ftm_per_burst = 2;
             FtmParameters.burst_duration = 10;
             FtmParameters.burst_period = 10;
         } 
@@ -92,10 +94,10 @@ void analysis(){
 
     //not moving and last state was fix_position
     else if (state == "fix_position"){
-        FtmParameters.burst_exponent = 1 + (same_state_counter / 10);
-        FtmParameters.ftm_per_burst = 2 + (same_state_counter/4);
-        FtmParameters.burst_duration = 10;
-        FtmParameters.burst_period = 10;
+        FtmParameters.burst_exponent = (FtmParameters.burst_exponent < 4) ? (2 + (same_state_counter / 5)) : 4;
+        FtmParameters.ftm_per_burst = (FtmParameters.ftm_per_burst < 5 ) ? (2 + (same_state_counter/2)) : 5;
+        FtmParameters.burst_duration = (FtmParameters.burst_duration < 11) ? (7 + (same_state_counter / 2)) : 11;
+        FtmParameters.burst_period = (FtmParameters.burst_period < 12) ? (8 + (same_state_counter / 2)) : 12;
         same_state_counter++;
     }
 
@@ -103,8 +105,8 @@ void analysis(){
     else if (state == "transition"){
         state = "fix_position";
         same_state_counter = 0;
-        FtmParameters.burst_exponent = 1;
-        FtmParameters.ftm_per_burst = 1;
+        FtmParameters.burst_exponent = 2;
+        FtmParameters.ftm_per_burst = 2;
         FtmParameters.burst_duration = 10;
         FtmParameters.burst_period = 10;
     }
@@ -151,8 +153,16 @@ static void GenerateTraffic ()
 }
 
 void SessionOver(FtmSession session){
+    // std::cout << "FtmParameters.burst_exponent:" << FtmParameters.burst_exponent <<  std::endl;
+    // std::cout << "FtmParameters.burst_duration:" << FtmParameters.burst_duration <<  std::endl;
+    // std::cout << "FtmParameters.burst_period:" << FtmParameters.burst_period <<  std::endl;
+    // std::cout << "FtmParameters.ftm_per_burst:" << FtmParameters.ftm_per_burst <<  std::endl;
+    // std::cout << "FtmParameters.min_delta_ftm:" << FtmParameters.min_delta_ftm <<  std::endl;
+    // std::cout << "---------------------" <<  std::endl;
+
+
     std::string file_path = "./ftm_ranging/simulations/data/adaptive-algorithm-test/";
-    std::string file_name =  file_path + "static-algorithm";
+    std::string file_name =  file_path + dynamic_mode ? "adaptive-algorithm" : "static-algorithm";
     t2 =  Simulator::Now().GetSeconds();
     
     //expected distance & actual distance
@@ -177,23 +187,16 @@ void SessionOver(FtmSession session){
 
     mean_sig_str = double(mean_sig_str / count);
 
-    output << FtmParameters.min_delta_ftm << " " << FtmParameters.burst_period << " " << FtmParameters.burst_exponent << " " << FtmParameters.burst_duration << " " << FtmParameters.ftm_per_burst << " "  << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) << " 2.5"  << "\n";
+    output << FtmParameters.min_delta_ftm << " " << FtmParameters.burst_period << " " << FtmParameters.burst_exponent << " " << FtmParameters.burst_duration << " " << FtmParameters.ftm_per_burst << " "  << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) << " 2.5 " << final_position.x << " " << final_position.y <<"\n";
     output.close();
 
     //for algorithm analysis purposes
     hist_rtt.insert(hist_rtt.begin(), double(total_rtt / count));
-    // if (hist_rtt.size() > 2){
-    //     analysis();
-    // }
-
-	if (session_counter < measurements)
-    	Simulator::Schedule(Seconds (0.001), &GenerateTraffic);
-    else{
-        std::cout << "Stopping simulator..." << std::endl;
-        Simulator::Stop();  
+    if (dynamic_mode && .size() > 2){
+        analysis();
     }
 
-    session_counter++;
+    Simulator::Schedule(Seconds (0.001), &GenerateTraffic);
 }
 
 void loadFtmMap(){
@@ -221,7 +224,7 @@ void initialSetUp(){
 	std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(2.5) + "]";
 	mobility.SetMobilityModel ("ns3::RandomDirection2dMobilityModel",
 		"Speed", StringValue (_speed),
-		"Bounds", StringValue ("0|" + std::to_string(10) + "|0|" + std::to_string(10))
+		"Bounds", StringValue ("0|" + std::to_string(15) + "|0|" + std::to_string(15))
 	);
 		
 	mobility.SetPositionAllocator ("ns3::RandomBoxPositionAllocator",
@@ -305,12 +308,149 @@ void initialSetUp(){
 
 }
 
-void runSimulation(){
-    Simulator::ScheduleNow (&GenerateTraffic);
+void loadConfigurations(vector<vector<int>>& configurations){
+    configurations.push_back({15,7,1,5,1});
+    configurations.push_back({15,7,1,5,2});
+    configurations.push_back({15,7,1,5,3});
+    configurations.push_back({15,7,1,5,4});
 
-    Simulator::Stop (Seconds (500000.0));
-    Simulator::Run ();
-    Simulator::Destroy ();
+    configurations.push_back({15,7,2,5,1});
+    configurations.push_back({15,7,2,5,2});
+    configurations.push_back({15,7,2,5,3});
+    configurations.push_back({15,7,2,5,4});
+
+    configurations.push_back({15,7,3,5,1});
+    configurations.push_back({15,7,3,5,2});
+    configurations.push_back({15,7,3,5,3});
+    configurations.push_back({15,7,3,5,4});
+
+    configurations.push_back({15,7,3,6,1});
+    configurations.push_back({15,7,3,6,2});
+    configurations.push_back({15,7,3,6,3});
+    configurations.push_back({15,7,3,6,4});
+
+    configurations.push_back({15,7,3,7,1});
+    configurations.push_back({15,7,3,7,2});
+    configurations.push_back({15,7,3,7,3});
+    configurations.push_back({15,7,3,7,4});
+
+    configurations.push_back({15,7,3,8,1});
+    configurations.push_back({15,7,3,8,2});
+    configurations.push_back({15,7,3,8,3});
+    configurations.push_back({15,7,3,8,4});
+
+    configurations.push_back({15,7,3,9,1});
+    configurations.push_back({15,7,3,9,2});
+    configurations.push_back({15,7,3,9,3});
+    configurations.push_back({15,7,3,9,4});
+
+    configurations.push_back({15,7,3,10,1});
+    configurations.push_back({15,7,3,10,2});
+    configurations.push_back({15,7,3,10,3});
+    configurations.push_back({15,7,3,10,4});
+    
+    configurations.push_back({15,8,3,5,1});
+    configurations.push_back({15,8,3,5,2});
+    configurations.push_back({15,8,3,5,3});
+    configurations.push_back({15,8,3,5,4});
+
+    configurations.push_back({15,8,3,6,1});
+    configurations.push_back({15,8,3,6,2});
+    configurations.push_back({15,8,3,6,3});
+    configurations.push_back({15,8,3,6,4});
+
+    configurations.push_back({15,8,3,7,1});
+    configurations.push_back({15,8,3,7,2});
+    configurations.push_back({15,8,3,7,3});
+    configurations.push_back({15,8,3,7,4});
+
+    configurations.push_back({15,8,3,8,1});
+    configurations.push_back({15,8,3,8,2});
+    configurations.push_back({15,8,3,8,3});
+    configurations.push_back({15,8,3,8,4});
+
+    configurations.push_back({15,8,3,9,1});
+    configurations.push_back({15,8,3,9,2});
+    configurations.push_back({15,8,3,9,3});
+    configurations.push_back({15,8,3,9,4});
+
+    configurations.push_back({15,8,3,10,1});
+    configurations.push_back({15,8,3,10,2});
+    configurations.push_back({15,8,3,10,3});
+    configurations.push_back({15,8,3,10,4});
+
+    configurations.push_back({15,9,3,5,1});
+    configurations.push_back({15,9,3,5,2});
+    configurations.push_back({15,9,3,5,3});
+    configurations.push_back({15,9,3,5,4});
+    configurations.push_back({15,9,3,5,5});
+
+    configurations.push_back({15,9,3,6,1});
+    configurations.push_back({15,9,3,6,2});
+    configurations.push_back({15,9,3,6,3});
+    configurations.push_back({15,9,3,6,4});
+    configurations.push_back({15,9,3,6,5});
+
+    configurations.push_back({15,9,3,7,1});
+    configurations.push_back({15,9,3,7,2});
+    configurations.push_back({15,9,3,7,3});
+    configurations.push_back({15,9,3,7,4});
+    configurations.push_back({15,9,3,7,5});
+
+    configurations.push_back({15,9,3,8,1});
+    configurations.push_back({15,9,3,8,2});
+    configurations.push_back({15,9,3,8,3});
+    configurations.push_back({15,9,3,8,4});
+    configurations.push_back({15,9,3,8,5});
+
+    configurations.push_back({15,9,3,9,1});
+    configurations.push_back({15,9,3,9,2});
+    configurations.push_back({15,9,3,9,3});
+    configurations.push_back({15,9,3,9,4});
+    configurations.push_back({15,9,3,9,5});
+
+    configurations.push_back({15,9,3,10,1});
+    configurations.push_back({15,9,3,10,2});
+    configurations.push_back({15,9,3,10,3});
+    configurations.push_back({15,9,3,10,4});
+    configurations.push_back({15,9,3,10,5});
+
+    configurations.push_back({15,8,1,5,2});
+    configurations.push_back({15,8,1,5,3});
+    configurations.push_back({15,9,1,5,4});
+    configurations.push_back({15,8,1,5,5});
+    configurations.push_back({15,10,2,10,2});
+    configurations.push_back({15,10,2,10,3});
+    configurations.push_back({15,10,2,10,4});
+    configurations.push_back({15,10,2,10,5});  
+    configurations.push_back({15,10,3,10,2});
+    configurations.push_back({15,10,3,10,3});
+    configurations.push_back({15,10,3,10,4});
+    configurations.push_back({15,10,3,10,5});
+    configurations.push_back({15,10,4,10,2});
+    configurations.push_back({15,10,4,10,3});
+    configurations.push_back({15,10,4,10,4});
+    configurations.push_back({15,10,4,10,5});
+}
+
+
+void runSimulation(){
+    if (dynamic_mode){
+        Simulator::ScheduleNow (&GenerateTraffic);
+        Simulator::Stop (Seconds (1000.0));
+        Simulator::Run ();
+        Simulator::Destroy ();
+    }
+    else{
+        vector<vector<int>> configurations;
+        loadConfigurations(configurations);
+        for (int i = 0; i < configurations.size(); i++){
+            Simulator::ScheduleNow (&GenerateTraffic);
+            Simulator::Stop (Seconds (1000.0));
+            Simulator::Run ();
+        }
+        Simulator::Destroy ();
+    }
 }
 
 int main (int argc, char *argv[]){
