@@ -119,6 +119,10 @@ static void GenerateTraffic ()
 
 	Mac48Address to = Mac48Address::ConvertFrom (recvAddr);
 
+
+    // std::cout << _sta_mac << std::endl;
+    // std::cout << to << std::endl;
+
 	Ptr<FtmSession> session = _sta_mac->NewFtmSession(to);
 
 	if (session == 0)
@@ -162,7 +166,7 @@ void SessionOver(FtmSession session){
 
 
     std::string file_path = "./ftm_ranging/simulations/data/adaptive-algorithm-test/";
-    std::string file_name =  file_path + dynamic_mode ? "adaptive-algorithm" : "static-algorithm";
+    std::string file_name =  file_path + (dynamic_mode ? "adaptive-algorithm" : "static-algorithm");
     t2 =  Simulator::Now().GetSeconds();
     
     //expected distance & actual distance
@@ -192,25 +196,45 @@ void SessionOver(FtmSession session){
 
     //for algorithm analysis purposes
     hist_rtt.insert(hist_rtt.begin(), double(total_rtt / count));
-    if (dynamic_mode && .size() > 2){
+    if (dynamic_mode && hist_rtt.size() > 2){
         analysis();
     }
 
     Simulator::Schedule(Seconds (0.001), &GenerateTraffic);
 }
 
-void loadFtmMap(){
-  map = CreateObject<WirelessFtmErrorModel::FtmMap> ();
-
-  map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error.map");
-
-  std::cout << "Multipath Map loaded!" << std::endl;
+void loadConfigurations(std::vector<std::vector<int>>& configurations){
+    std::ifstream file("./scratch/ftm-configurations.txt");
+    if (file.is_open()){
+        std::string line;
+        while (std::getline(file, line, '\n')) {
+            // vector<double> configuration;
+            // using printf() in all tests for consistency
+            std::stringstream configuration(line);
+            std::string segment;
+            std::vector<int> seglist;
+            while(std::getline(configuration, segment, ' '))
+                seglist.push_back(stoi(segment));
+            
+            configurations.push_back(seglist);
+        
+        }
+        file.close();
+    }
 }
 
-void initialSetUp(){
-  	//set time resolution to pico seconds for the time stamps, as default is in nano seconds. IMPORTANT
-	Time::SetResolution(Time::PS);
+void updateParameters(std::vector<int>& configuration){
+    FtmParameters.min_delta_ftm = configuration[0]; 
+    FtmParameters.burst_period = configuration[1];
+    FtmParameters.burst_exponent = configuration[2];
+    FtmParameters.burst_duration = configuration[3];
+    FtmParameters.ftm_per_burst = configuration[4];
 
+    std::cout << "Parameters uploaded" << std::endl;
+}
+
+void runSimulation(){
+    //set time resolution to pico seconds for the time stamps, as default is in nano seconds. IMPORTANT
 	Config::SetDefault ("ns3::RegularWifiMac::FTM_Enabled", BooleanValue(true));
 
     //create nodes
@@ -235,9 +259,6 @@ void initialSetUp(){
 
 	mobility.Install (receivingNodesContainer);
 
-
-
-
 	MobilityHelper constantPositionMobility;
 	constantPositionMobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	constantPositionMobility.Install (initiatingNodesContainer);
@@ -246,6 +267,7 @@ void initialSetUp(){
 
 	// end assign mobility model
 
+    
 
     WifiHelper wifi;
     wifi.SetStandard (WIFI_STANDARD_80211n_2_4GHZ);
@@ -271,8 +293,6 @@ void initialSetUp(){
 	// of the distance between the two stations, and the transmit power
 	wifiChannel.AddPropagationLoss ("ns3::FixedRssLossModel","Rss",DoubleValue (-40));
     
-
-
     wifiPhy.SetChannel (wifiChannel.Create ());
     WifiMacHelper wifiMac;
     wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager");
@@ -305,157 +325,28 @@ void initialSetUp(){
     // Tracing
     wifiPhy.EnablePcap ("ftm-ranging", devices);
 
-
-}
-
-void loadConfigurations(vector<vector<int>>& configurations){
-    configurations.push_back({15,7,1,5,1});
-    configurations.push_back({15,7,1,5,2});
-    configurations.push_back({15,7,1,5,3});
-    configurations.push_back({15,7,1,5,4});
-
-    configurations.push_back({15,7,2,5,1});
-    configurations.push_back({15,7,2,5,2});
-    configurations.push_back({15,7,2,5,3});
-    configurations.push_back({15,7,2,5,4});
-
-    configurations.push_back({15,7,3,5,1});
-    configurations.push_back({15,7,3,5,2});
-    configurations.push_back({15,7,3,5,3});
-    configurations.push_back({15,7,3,5,4});
-
-    configurations.push_back({15,7,3,6,1});
-    configurations.push_back({15,7,3,6,2});
-    configurations.push_back({15,7,3,6,3});
-    configurations.push_back({15,7,3,6,4});
-
-    configurations.push_back({15,7,3,7,1});
-    configurations.push_back({15,7,3,7,2});
-    configurations.push_back({15,7,3,7,3});
-    configurations.push_back({15,7,3,7,4});
-
-    configurations.push_back({15,7,3,8,1});
-    configurations.push_back({15,7,3,8,2});
-    configurations.push_back({15,7,3,8,3});
-    configurations.push_back({15,7,3,8,4});
-
-    configurations.push_back({15,7,3,9,1});
-    configurations.push_back({15,7,3,9,2});
-    configurations.push_back({15,7,3,9,3});
-    configurations.push_back({15,7,3,9,4});
-
-    configurations.push_back({15,7,3,10,1});
-    configurations.push_back({15,7,3,10,2});
-    configurations.push_back({15,7,3,10,3});
-    configurations.push_back({15,7,3,10,4});
-    
-    configurations.push_back({15,8,3,5,1});
-    configurations.push_back({15,8,3,5,2});
-    configurations.push_back({15,8,3,5,3});
-    configurations.push_back({15,8,3,5,4});
-
-    configurations.push_back({15,8,3,6,1});
-    configurations.push_back({15,8,3,6,2});
-    configurations.push_back({15,8,3,6,3});
-    configurations.push_back({15,8,3,6,4});
-
-    configurations.push_back({15,8,3,7,1});
-    configurations.push_back({15,8,3,7,2});
-    configurations.push_back({15,8,3,7,3});
-    configurations.push_back({15,8,3,7,4});
-
-    configurations.push_back({15,8,3,8,1});
-    configurations.push_back({15,8,3,8,2});
-    configurations.push_back({15,8,3,8,3});
-    configurations.push_back({15,8,3,8,4});
-
-    configurations.push_back({15,8,3,9,1});
-    configurations.push_back({15,8,3,9,2});
-    configurations.push_back({15,8,3,9,3});
-    configurations.push_back({15,8,3,9,4});
-
-    configurations.push_back({15,8,3,10,1});
-    configurations.push_back({15,8,3,10,2});
-    configurations.push_back({15,8,3,10,3});
-    configurations.push_back({15,8,3,10,4});
-
-    configurations.push_back({15,9,3,5,1});
-    configurations.push_back({15,9,3,5,2});
-    configurations.push_back({15,9,3,5,3});
-    configurations.push_back({15,9,3,5,4});
-    configurations.push_back({15,9,3,5,5});
-
-    configurations.push_back({15,9,3,6,1});
-    configurations.push_back({15,9,3,6,2});
-    configurations.push_back({15,9,3,6,3});
-    configurations.push_back({15,9,3,6,4});
-    configurations.push_back({15,9,3,6,5});
-
-    configurations.push_back({15,9,3,7,1});
-    configurations.push_back({15,9,3,7,2});
-    configurations.push_back({15,9,3,7,3});
-    configurations.push_back({15,9,3,7,4});
-    configurations.push_back({15,9,3,7,5});
-
-    configurations.push_back({15,9,3,8,1});
-    configurations.push_back({15,9,3,8,2});
-    configurations.push_back({15,9,3,8,3});
-    configurations.push_back({15,9,3,8,4});
-    configurations.push_back({15,9,3,8,5});
-
-    configurations.push_back({15,9,3,9,1});
-    configurations.push_back({15,9,3,9,2});
-    configurations.push_back({15,9,3,9,3});
-    configurations.push_back({15,9,3,9,4});
-    configurations.push_back({15,9,3,9,5});
-
-    configurations.push_back({15,9,3,10,1});
-    configurations.push_back({15,9,3,10,2});
-    configurations.push_back({15,9,3,10,3});
-    configurations.push_back({15,9,3,10,4});
-    configurations.push_back({15,9,3,10,5});
-
-    configurations.push_back({15,8,1,5,2});
-    configurations.push_back({15,8,1,5,3});
-    configurations.push_back({15,9,1,5,4});
-    configurations.push_back({15,8,1,5,5});
-    configurations.push_back({15,10,2,10,2});
-    configurations.push_back({15,10,2,10,3});
-    configurations.push_back({15,10,2,10,4});
-    configurations.push_back({15,10,2,10,5});  
-    configurations.push_back({15,10,3,10,2});
-    configurations.push_back({15,10,3,10,3});
-    configurations.push_back({15,10,3,10,4});
-    configurations.push_back({15,10,3,10,5});
-    configurations.push_back({15,10,4,10,2});
-    configurations.push_back({15,10,4,10,3});
-    configurations.push_back({15,10,4,10,4});
-    configurations.push_back({15,10,4,10,5});
-}
-
-
-void runSimulation(){
-    if (dynamic_mode){
-        Simulator::ScheduleNow (&GenerateTraffic);
-        Simulator::Stop (Seconds (1000.0));
-        Simulator::Run ();
-        Simulator::Destroy ();
-    }
-    else{
-        vector<vector<int>> configurations;
-        loadConfigurations(configurations);
-        for (int i = 0; i < configurations.size(); i++){
-            Simulator::ScheduleNow (&GenerateTraffic);
-            Simulator::Stop (Seconds (1000.0));
-            Simulator::Run ();
-        }
-        Simulator::Destroy ();
-    }
+    Simulator::ScheduleNow (&GenerateTraffic);
+    Simulator::Stop (Seconds (100.0));
+    Simulator::Run ();
+    Simulator::Destroy();
 }
 
 int main (int argc, char *argv[]){
-	loadFtmMap();
-	initialSetUp();
-	runSimulation();
+    //Load FTM map
+    map = CreateObject<WirelessFtmErrorModel::FtmMap> ();
+    map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error.map");
+	
+    Time::SetResolution(Time::PS);
+
+    std::vector<std::vector<int>> configurations;
+    loadConfigurations(configurations);
+    for (unsigned i = 0; configurations.size(); i++){
+        for (unsigned j = 0; j < configurations[i].size(); j++){
+            std::cout << configurations[i][j] << " ";
+        }
+        std::cout << std::endl;
+        updateParameters(configurations[i]);
+        runSimulation();
+    }
 	return 0;
 }
