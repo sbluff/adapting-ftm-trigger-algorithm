@@ -16,11 +16,11 @@ def file_is_empty(filename):
                 return False
     return True
 
-files = ['./data/adaptive-algorithm-test/adaptive-algorithm', './data/adaptive-algorithm-test/static-algorithm']
+files = ['./adaptive-algorithm-test/adaptive-algorithm', './adaptive-algorithm-test/static-algorithm']
 simulation_types = ['adaptive-algorithm', 'static_algorithm']
 
-with open('./data/data-algorithm.csv', 'w+', newline='') as csvfile:
-    fieldnames = ['real_distance','meassured_distance','simulation_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage', 'efficiency', 'velocity']
+with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
+    fieldnames = ['real_distance','meassured_distance','simulation_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage', 'efficiency', 'velocity', 'x_position', 'y_position']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     count = 0
@@ -28,8 +28,9 @@ with open('./data/data-algorithm.csv', 'w+', newline='') as csvfile:
         if not file_is_empty(file):
             curr_measurement = np.loadtxt(file)
             for m in curr_measurement:
+                print(m)
                 value = int(m[6]) / 2 / (10000 * 0.3)
-                channel_usage = abs(float(m[8]/m[9])*100)
+                channel_usage = abs(float(m[9]/m[8])*100)
                 writer.writerow({
                     'real_distance': m[5],
                     'meassured_distance': value,
@@ -44,7 +45,9 @@ with open('./data/data-algorithm.csv', 'w+', newline='') as csvfile:
                     'channel_time': abs(m[9]),
                     'channel_usage': channel_usage,
                     'efficiency':1/(float(channel_usage * abs(value-m[5]))) if value-m[5] else 0,
-                    'velocity': m[10]
+                    'velocity': m[10],
+                    'x_position': m[11],
+                    'y_position': m[12]
                 })
         count += 1       
 

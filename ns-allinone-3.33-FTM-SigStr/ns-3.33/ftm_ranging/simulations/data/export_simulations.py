@@ -16,13 +16,13 @@ def file_is_empty(filename):
                 return False
     return True
 
-with open('./data/data.csv', 'w+', newline='') as csvfile:
+with open('./data.csv', 'w+', newline='') as csvfile:
     fieldnames = ['real_distance','meassured_distance','simulation_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage', 'efficiency', 'velocity']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
-    subfolders = [ f.path for f in os.scandir('./data/') if f.is_dir() ]
+    subfolders = [ f.path for f in os.scandir('./') if f.is_dir() ]
     for subfolder in subfolders:
-        meassurment_type = subfolder.replace('./data/', '')
+        meassurment_type = subfolder.replace('./', '')
         parameters_configuration = [ f.path for f in os.scandir(subfolder) if f.is_dir() ]
         for parameter_config in parameters_configuration:
             parameters = parameter_config.replace(subfolder + '/', '')
