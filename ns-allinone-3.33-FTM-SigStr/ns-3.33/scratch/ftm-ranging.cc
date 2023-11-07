@@ -57,13 +57,13 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("FtmRanging");
 
 int session_counter = 0;
-int measurements_per_distance = 50;
+int measurements_per_distance = 500;
 int max_sampling_distance = 10;
 int step = 5;
 double velocity = 0;
 double distance = 10;
 std::string file_name;
-int min_delta_ftm, burst_duration, burst_exponent, burst_period, ftm_per_burst;
+// int min_delta_ftm, burst_duration, burst_exponent, burst_period, ftm_per_burst;
 Ptr<WirelessFtmErrorModel::FtmMap> map;
 Ptr<WifiNetDevice> _ap;
 Ptr<WifiNetDevice> _sta;
@@ -72,6 +72,14 @@ std::string mobility_model;
 double t1;
 double t2; //meassure session lenght in time
 bool configuration_finished = false;
+
+struct {             
+	int min_delta_ftm = 15;         
+	int burst_period = 10;         
+	int burst_exponent = 2;         
+	int burst_duration = 10;         
+	int ftm_per_burst = 2;         
+} FtmParameters; 
 
 Vector initial_position = Vector(0, 0, 0); //this positions will be used for the mean 
 Vector final_position = Vector(0, 0, 0);	//position in the markov meassurements
@@ -85,11 +93,11 @@ void configureFtm(FtmParams &ftm_params){
   ftm_params.SetStatusIndicationValue(0);
 
   //protocol parameters
-  ftm_params.SetMinDeltaFtm(min_delta_ftm); //100 us between frames
-  ftm_params.SetBurstDuration(burst_duration); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
-  ftm_params.SetNumberOfBurstsExponent(burst_exponent); //4 bursts
-  ftm_params.SetBurstPeriod(burst_period); //1000 ms between burst periods
-  ftm_params.SetFtmsPerBurst(ftm_per_burst);
+  ftm_params.SetMinDeltaFtm(FtmParameters.min_delta_ftm); //100 us between frames
+  ftm_params.SetBurstDuration(FtmParameters.burst_duration); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
+  ftm_params.SetNumberOfBurstsExponent(FtmParameters.burst_exponent); //4 bursts
+  ftm_params.SetBurstPeriod(FtmParameters.burst_period); //1000 ms between burst periods
+  ftm_params.SetFtmsPerBurst(FtmParameters.ftm_per_burst);
 
   ftm_params.SetPartialTsfNoPref(true);
   ftm_params.SetAsap(true);
@@ -174,7 +182,7 @@ void SessionOver (FtmSession session)
 			final_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
 
     t2 =  Simulator::Now().GetSeconds();
-    std::string file_path = "./ftm_ranging/simulations/data/" + mobility_model + "/" + std::to_string(int(min_delta_ftm)) + '-' + std::to_string(int(burst_duration)) + '-' + std::to_string(int(burst_exponent)) + '-' + std::to_string(int(burst_period)) + '-' + std::to_string(int(ftm_per_burst)) + '/';
+    std::string file_path = "./ftm_ranging/simulations/data/" + mobility_model + "/" + std::to_string(int(FtmParameters.min_delta_ftm)) + '-' + std::to_string(int(FtmParameters.burst_duration)) + '-' + std::to_string(int(FtmParameters.burst_exponent)) + '-' + std::to_string(int(FtmParameters.burst_period)) + '-' + std::to_string(int(FtmParameters.ftm_per_burst)) + '/';
     file_name =  file_path + std::to_string(int(distance)) + 'm';
     //create folder for files
     const char* str = file_path.c_str();
@@ -232,128 +240,23 @@ void SessionOver (FtmSession session)
 
 //loads into configurations the set of parameters that will be used during each one of the mobility_model simulations
 void loadConfigurations(std::vector<std::vector<int>>& configurations){
-  configurations.push_back({15,7,1,5,1});
-  configurations.push_back({15,7,1,5,2});
-  configurations.push_back({15,7,1,5,3});
-  configurations.push_back({15,7,1,5,4});
-
-  configurations.push_back({15,7,2,5,1});
-  configurations.push_back({15,7,2,5,2});
-  configurations.push_back({15,7,2,5,3});
-  configurations.push_back({15,7,2,5,4});
-
-  configurations.push_back({15,7,3,5,1});
-  configurations.push_back({15,7,3,5,2});
-  configurations.push_back({15,7,3,5,3});
-  configurations.push_back({15,7,3,5,4});
-
-  configurations.push_back({15,7,3,6,1});
-  configurations.push_back({15,7,3,6,2});
-  configurations.push_back({15,7,3,6,3});
-  configurations.push_back({15,7,3,6,4});
-
-  configurations.push_back({15,7,3,7,1});
-  configurations.push_back({15,7,3,7,2});
-  configurations.push_back({15,7,3,7,3});
-  configurations.push_back({15,7,3,7,4});
-
-  configurations.push_back({15,7,3,8,1});
-  configurations.push_back({15,7,3,8,2});
-  configurations.push_back({15,7,3,8,3});
-  configurations.push_back({15,7,3,8,4});
-
-  configurations.push_back({15,7,3,9,1});
-  configurations.push_back({15,7,3,9,2});
-  configurations.push_back({15,7,3,9,3});
-  configurations.push_back({15,7,3,9,4});
-
-  configurations.push_back({15,7,3,10,1});
-  configurations.push_back({15,7,3,10,2});
-  configurations.push_back({15,7,3,10,3});
-  configurations.push_back({15,7,3,10,4});
-  
-  configurations.push_back({15,8,3,5,1});
-  configurations.push_back({15,8,3,5,2});
-  configurations.push_back({15,8,3,5,3});
-  configurations.push_back({15,8,3,5,4});
-
-  configurations.push_back({15,8,3,6,1});
-  configurations.push_back({15,8,3,6,2});
-  configurations.push_back({15,8,3,6,3});
-  configurations.push_back({15,8,3,6,4});
-
-  configurations.push_back({15,8,3,7,1});
-  configurations.push_back({15,8,3,7,2});
-  configurations.push_back({15,8,3,7,3});
-  configurations.push_back({15,8,3,7,4});
-
-  configurations.push_back({15,8,3,8,1});
-  configurations.push_back({15,8,3,8,2});
-  configurations.push_back({15,8,3,8,3});
-  configurations.push_back({15,8,3,8,4});
-
-  configurations.push_back({15,8,3,9,1});
-  configurations.push_back({15,8,3,9,2});
-  configurations.push_back({15,8,3,9,3});
-  configurations.push_back({15,8,3,9,4});
-
-  configurations.push_back({15,8,3,10,1});
-  configurations.push_back({15,8,3,10,2});
-  configurations.push_back({15,8,3,10,3});
-  configurations.push_back({15,8,3,10,4});
-
-  configurations.push_back({15,9,3,5,1});
-  configurations.push_back({15,9,3,5,2});
-  configurations.push_back({15,9,3,5,3});
-  configurations.push_back({15,9,3,5,4});
-  configurations.push_back({15,9,3,5,5});
-
-  configurations.push_back({15,9,3,6,1});
-  configurations.push_back({15,9,3,6,2});
-  configurations.push_back({15,9,3,6,3});
-  configurations.push_back({15,9,3,6,4});
-  configurations.push_back({15,9,3,6,5});
-
-  configurations.push_back({15,9,3,7,1});
-  configurations.push_back({15,9,3,7,2});
-  configurations.push_back({15,9,3,7,3});
-  configurations.push_back({15,9,3,7,4});
-  configurations.push_back({15,9,3,7,5});
-
-  configurations.push_back({15,9,3,8,1});
-  configurations.push_back({15,9,3,8,2});
-  configurations.push_back({15,9,3,8,3});
-  configurations.push_back({15,9,3,8,4});
-  configurations.push_back({15,9,3,8,5});
-
-  configurations.push_back({15,9,3,9,1});
-  configurations.push_back({15,9,3,9,2});
-  configurations.push_back({15,9,3,9,3});
-  configurations.push_back({15,9,3,9,4});
-  configurations.push_back({15,9,3,9,5});
-
-  configurations.push_back({15,9,3,10,1});
-  configurations.push_back({15,9,3,10,2});
-  configurations.push_back({15,9,3,10,3});
-  configurations.push_back({15,9,3,10,4});
-  configurations.push_back({15,9,3,10,5});
-
-  // configurations.push_back({15,8,1,5,2});
-  // configurations.push_back({15,8,1,5,3});
-  configurations.push_back({15,9,1,5,4});
-  // configurations.push_back({15,8,1,5,5});
-  // configurations.push_back({15,10,2,10,2});
-  // configurations.push_back({15,10,2,10,3});
-  // configurations.push_back({15,10,2,10,4});
-  // configurations.push_back({15,10,2,10,5});  
-  // configurations.push_back({15,10,3,10,2});
-  // configurations.push_back({15,10,3,10,3});
-  // configurations.push_back({15,10,3,10,4});
-  // configurations.push_back({15,10,3,10,5});
-  // configurations.push_back({15,10,4,10,2});
-  // configurations.push_back({15,10,4,10,3});
-  // configurations.push_back({15,10,4,10,4});
-  // configurations.push_back({15,10,4,10,5});
+  std::ifstream file("./scratch/ftm-configurations.txt");
+  if (file.is_open()){
+      std::string line;
+      while (std::getline(file, line, '\n')) {
+          // vector<double> configuration;
+          // using printf() in all tests for consistency
+          std::stringstream configuration(line);
+          std::string segment;
+          std::vector<int> seglist;
+          while(std::getline(configuration, segment, ' '))
+              seglist.push_back(stoi(segment));
+          
+          configurations.push_back(seglist);
+      
+      }
+      file.close();
+  }
 }
 
 //loads in models the type of simulations that will take place
@@ -454,11 +357,11 @@ void runSimulation(const std::vector<int>& configuration, const float& velocity)
     ///////// PARAMETERS
     configuration_finished = false;
     std::cout << std::to_string(configuration[0]) << " " << std::to_string(configuration[1]) << " " << std::to_string(configuration[2]) << " " << std::to_string(configuration[3]) << " " << std::to_string(configuration[4]) << std::endl;
-    min_delta_ftm = configuration[0];
-    burst_duration = configuration[1];
-    burst_exponent = configuration[2];
-    burst_period = configuration[3];
-    ftm_per_burst = configuration[4];
+    FtmParameters.min_delta_ftm = configuration[0];
+    FtmParameters.burst_duration = configuration[1];
+    FtmParameters.burst_exponent = configuration[2];
+    FtmParameters.burst_period = configuration[3];
+    FtmParameters.ftm_per_burst = configuration[4];
 
     //enable FTM through attribute system
     Config::SetDefault ("ns3::RegularWifiMac::FTM_Enabled", BooleanValue(true));
