@@ -39,6 +39,7 @@ std::string state = "fix_position";
 double intial_distance = 10.0;
 
 bool dynamic_mode = false;
+double simulation_time = 4;
 
 Vector initial_position = Vector(0, 0, 0); //this positions will be used for the mean 
 Vector final_position = Vector(0, 0, 0);	//position in the markov meassurements
@@ -68,7 +69,6 @@ void configureFtm(FtmParams &ftm_params){
   ftm_params.SetPartialTsfNoPref(true);
   ftm_params.SetAsap(true);
 }
-
 
 void analysis(){
     if (abs(hist_rtt[0]-hist_rtt[1])/hist_rtt[1] > 0.05){
@@ -204,22 +204,26 @@ void SessionOver(FtmSession session){
 }
 
 void loadConfigurations(std::vector<std::vector<int>>& configurations){
-    std::ifstream file("./scratch/ftm-configurations.txt");
-    if (file.is_open()){
-        std::string line;
-        while (std::getline(file, line, '\n')) {
-            // vector<double> configuration;
-            // using printf() in all tests for consistency
-            std::stringstream configuration(line);
-            std::string segment;
-            std::vector<int> seglist;
-            while(std::getline(configuration, segment, ' '))
-                seglist.push_back(stoi(segment));
+    if (!dynamic_mode){
+        std::ifstream file("./scratch/ftm-configurations.txt");
+        if (file.is_open()){
+            std::string line;
+            while (std::getline(file, line, '\n')) {
+                // vector<double> configuration;
+                // using printf() in all tests for consistency
+                std::stringstream configuration(line);
+                std::string segment;
+                std::vector<int> seglist;
+                while(std::getline(configuration, segment, ' '))
+                    seglist.push_back(stoi(segment));
+                
+                configurations.push_back(seglist);
             
-            configurations.push_back(seglist);
-        
+            }
+            file.close();
         }
-        file.close();
+    }else{
+        configurations.push_back({15,7,1,7,1});
     }
 }
 
@@ -326,7 +330,7 @@ void runSimulation(){
     wifiPhy.EnablePcap ("ftm-ranging", devices);
 
     Simulator::ScheduleNow (&GenerateTraffic);
-    Simulator::Stop (Seconds (100.0));
+    Simulator::Stop (Hours (simulation_time));
     Simulator::Run ();
     Simulator::Destroy();
 }
