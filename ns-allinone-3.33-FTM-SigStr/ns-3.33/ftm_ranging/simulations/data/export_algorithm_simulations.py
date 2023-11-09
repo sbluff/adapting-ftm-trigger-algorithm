@@ -17,7 +17,7 @@ def file_is_empty(filename):
     return True
 
 files = ['./adaptive-algorithm-test/adaptive-algorithm', './adaptive-algorithm-test/static-algorithm']
-simulation_types = ['adaptive-algorithm', 'static_algorithm']
+simulation_types = ['adaptive_algorithm', 'static_algorithm']
 
 with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
     fieldnames = ['real_distance','meassured_distance','simulation_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage', 'efficiency', 'velocity', 'x_position', 'y_position']
@@ -44,7 +44,7 @@ with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
                     'session_time': abs(m[8]), 
                     'channel_time': abs(m[9]),
                     'channel_usage': channel_usage,
-                    'efficiency':1/(float(channel_usage * abs(value-m[5]))) if value-m[5] else 0,
+                    'efficiency':1/(float(channel_usage * abs(value-m[5]))) if channel_usage * abs(value-m[5]) != 0 else 0,
                     'velocity': m[10],
                     'x_position': m[11],
                     'y_position': m[12]
