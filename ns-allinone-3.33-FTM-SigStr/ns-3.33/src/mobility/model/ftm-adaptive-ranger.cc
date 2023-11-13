@@ -2,22 +2,21 @@
 
 //constructor of the class
 FtmAdaptiveRanger::FtmAdaptiveRanger(){
-    parameters.SetMinDeltaFtm(15);
-    parameters.SetBurstDuration(8);
-    parameters.SetNumberOfBurstsExponent(1);
-    parameters.SetBurstPeriod(8);
-    parameters.SetFtmsPerBurst(5);
-
-    //minutes
-    simulation_time = ns3::Minutes(1);
-
+    state = "brownian";
     same_state_counter = 0;
-    state = "fix_position";
     std_deviation = 0;
 
+    data = state == "brownian" ? ReadCsv("ftm_ranging/simulations/data/data-brownian.csv") : ReadCsv("ftm_ranging/simulations/data/data-fix_position.csv");
 
-    brownian_data = ReadCsv("ftm_ranging/simulations/data/data-brownian.csv");
-    fix_position_data = ReadCsv("ftm_ranging/simulations/data/data-fix_position.csv");
+    parameters.SetMinDeltaFtm(15);
+    parameters.SetBurstDuration(7);
+    parameters.SetNumberOfBurstsExponent(1);
+    parameters.SetBurstPeriod(7);
+    parameters.SetFtmsPerBurst(4);
+
+    LoadStatisticalVariables(true);
+    //minutes
+    simulation_time = ns3::Minutes(60);
 }
 
 ns3::Time
@@ -56,10 +55,11 @@ FtmAdaptiveRanger::AddRtt(double rtt){
 
     // Reads a CSV file into a std::vector of <string, std::vector<int>> pairs where
 // each pair represents <column name, column values>
-std::vector<std::pair<std::string, std::vector<int>>> 
+std::vector<std::pair<std::string, std::vector<double>>> 
 FtmAdaptiveRanger::ReadCsv(std::string filename){
+    std::cout << filename << std::endl;
     // Create a std::vector of <string, int std::vector> pairs to store the result
-    std::vector<std::pair<std::string, std::vector<int>>> result;
+    std::vector<std::pair<std::string, std::vector<double>>> result;
 
     // Create an input filestream
     std::ifstream myFile(filename);
@@ -69,8 +69,10 @@ FtmAdaptiveRanger::ReadCsv(std::string filename){
 
     // Helper vars
     std::string line, colname;
-    int val;
+    double val;
 
+
+    int colIdx = 0;
     // Read the column names
     if(myFile.good())
     {
@@ -82,9 +84,10 @@ FtmAdaptiveRanger::ReadCsv(std::string filename){
 
         // Extract each column name
         while(std::getline(ss, colname, ',')){
-            
-            // Initialize and add <colname, int std::vector> pairs to result
-            result.push_back({colname, std::vector<int> {}});
+            // Initialize and add <colname, double std::vector> pairs to result
+            result.push_back({colname, std::vector<double> {}});
+
+            colIdx++;    
         }
     }
 
@@ -93,17 +96,14 @@ FtmAdaptiveRanger::ReadCsv(std::string filename){
     {
         // Create a stringstream of the current line
         std::stringstream ss(line);
-        
         // Keep track of the current column index
-        int colIdx = 0;
-        
+        colIdx = 0;        
         // Extract each integer
         while(ss >> val){
-            
             // Add the current integer to the 'colIdx' column's values std::vector
             result.at(colIdx).second.push_back(val);
-            
             // If the next token is a comma, ignore it and move on
+            
             if(ss.peek() == ',') ss.ignore();
             
             // Increment the column index
@@ -113,68 +113,119 @@ FtmAdaptiveRanger::ReadCsv(std::string filename){
 
     // Close file
     myFile.close();
-
     return result;
 }
 
 //based on the "parameters" and "state" (filter ), updates the value of the following global variables:
 //    -distribution_mean
 //    -standard_deviation
-double 
-FtmAdaptiveRanger::LoadStatisticalVariables(){
-    return 0.0;
+void 
+FtmAdaptiveRanger::LoadStatisticalVariables(bool LoadCsv){
+    double total_mean_percentage = 0;
+    double total_mean = 0;
+    double mean_distance = 0;
+    int count = 0;
+    bool same_configuration = false;
+
+    if(LoadCsv)
+        data = state == "brownian" ? ReadCsv("ftm_ranging/simulations/data/data-brownian.csv") : ReadCsv("ftm_ranging/simulations/data/data-fix_position.csv");
+
+
+    for (unsigned i = 0; i < data[3].second.size(); i++){
+        same_configuration = data[3].second[i] == double(parameters.GetMinDeltaFtm()) && data[4].second[i] == double(parameters.GetBurstPeriod()) && data[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && data[6].second[i] == double(parameters.GetBurstDuration()) && data[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
+        if (same_configuration){
+            total_mean_percentage += (data[8].second[i]/data[1].second[i]); 
+            total_mean += data[8].second[i]; 
+            mean_distance += data[1].second[i];
+            count++;
+        }
+    }
+    total_mean_percentage = double(total_mean_percentage/count) * 100;
+    total_mean = double(total_mean/count);
+    mean_distance = double(mean_distance / count);
+    std::cout << total_mean  << "m mean error" << std::endl;
+    std::cout << mean_distance  << "m mean distance between nodes" << std::endl;
+    std::cout << total_mean_percentage << "% mean error" << std::endl;
+
+    std_deviation = 0;
+    for (unsigned i = 0; i < data[3].second.size(); i++){
+        // same_configuration = data[3].second[i] == double(parameters.GetMinDeltaFtm()) && data[4].second[i] == double(parameters.GetBurstPeriod()) && data[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && data[6].second[i] == double(parameters.GetBurstDuration()) && data[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
+        // same_configuration = data[3].second[i] == double(parameters.GetMinDeltaFtm()) && data[4].second[i] == double(parameters.GetBurstPeriod()) && data[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && data[6].second[i] == double(parameters.GetBurstDuration()) && data[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
+        same_configuration = data[3].second[i] == double(parameters.GetMinDeltaFtm()) && data[4].second[i] == double(parameters.GetBurstPeriod()) && data[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && data[6].second[i] == double(parameters.GetBurstDuration()) && data[7].second[i] == double(parameters.GetFtmsPerBurst()) ;        
+        if (same_configuration){
+            std_deviation += std::pow(data[8].second[i] - total_mean, 2); 
+        }
+
+
+    }
+    std_deviation = std::sqrt(double(std_deviation/count))/mean_distance;
+    std::cout << std_deviation  << "% std deviation" << std::endl;
 }
 
 void 
 FtmAdaptiveRanger::Analysis(){
+    bool config_change = false;
+    std::string _state = state;
     //there has been a change in the expected RTT
-    if (hist_rtt.size() > 1 && abs(hist_rtt[0].second-hist_rtt[1].second)/hist_rtt[1].second > 0.05){
-        if (state == "fix_position"){
-            state="transition";
-        } 
+    if (hist_rtt.size() > 2){
+        if ((abs(hist_rtt[0].second - hist_rtt[1].second)/hist_rtt[1].second) > std_deviation){
+            std::cout << "Change detected: " << (abs(hist_rtt[0].second - hist_rtt[1].second)/hist_rtt[1].second) << "% (std_dev(%):" << std_deviation << std::endl;
+            if (state == "fix_position"){
+                _state="transition";
+            } 
+            else if (state == "transition"){
+                _state="brownian";
+                if (hist_rtt[2].first != "brownian")
+                    same_state_counter = 0;
+                else    
+                    same_state_counter++;
+                parameters.SetNumberOfBurstsExponent(1);
+                parameters.SetFtmsPerBurst(4);
+                parameters.SetBurstDuration(7);
+                parameters.SetBurstPeriod(7);
+                config_change = true;
+            } 
+            else if (state == "brownian"){
+                same_state_counter++;
+            } 
+        }
+
+        //not moving and last state was brownian
+        else if (state == "brownian"){
+            _state = "transition";
+        }
+
+        //not moving and last state was fix_position
+        else if (state == "fix_position"){
+            parameters.SetMinDeltaFtm(15);
+            parameters.SetBurstDuration(10);
+            parameters.SetNumberOfBurstsExponent(4);
+            parameters.SetBurstPeriod(10);
+            parameters.SetFtmsPerBurst(5);
+            same_state_counter++;
+            config_change = true;
+        }
+
+        //not moving and last state was fix_position
         else if (state == "transition"){
-            state="brownian";
-            if (hist_rtt[2].first != "brownian")
+            _state = "fix_position";
+            if (hist_rtt[2].first != "fix_position")
                 same_state_counter = 0;
             else    
                 same_state_counter++;
-            parameters.SetNumberOfBurstsExponent(1);
-            parameters.SetFtmsPerBurst(4);
-            parameters.SetBurstDuration(7);
-            parameters.SetBurstPeriod(7);
-        } 
-        else if (state == "brownian"){
-            same_state_counter++;
-        } 
-    }
-
-    //not moving and last state was brownian
-    else if (state == "brownian"){
-        state = "transition";
-    }
-
-    //not moving and last state was fix_position
-    else if (state == "fix_position"){
-        parameters.SetNumberOfBurstsExponent((parameters.GetNumberOfBurstsExponent() < 4) ? (1 + (same_state_counter / 5)) : 4);
-        parameters.SetFtmsPerBurst((parameters.GetFtmsPerBurst() < 5 ) ? (5 + (same_state_counter/2)) : 5);
-        parameters.SetBurstDuration((parameters.GetBurstDuration() < 11) ? (8 + (same_state_counter / 2)) : 11);
-        parameters.SetBurstPeriod((parameters.GetBurstPeriod() < 12) ? (8 + (same_state_counter / 2)) : 12);
-        same_state_counter++;
-
-    }
-
-    //not moving and last state was fix_position
-    else if (state == "transition"){
-        state = "fix_position";
-        if (hist_rtt[2].first != "fix_position")
             same_state_counter = 0;
-        else    
-            same_state_counter++;
-        same_state_counter = 0;
-        parameters.SetNumberOfBurstsExponent(1);
-        parameters.SetFtmsPerBurst(5);
-        parameters.SetBurstDuration(8);
-        parameters.SetBurstPeriod(8);
+            parameters.SetMinDeltaFtm(15);
+            parameters.SetBurstDuration(10);
+            parameters.SetNumberOfBurstsExponent(4);
+            parameters.SetBurstPeriod(10);
+            parameters.SetFtmsPerBurst(5);
+            config_change = true;
+        }
     }
 
+    if (config_change){
+        LoadStatisticalVariables(_state != state ? true : false);
+        std::cout << "-------------" << std::endl;
+    }
+    state = _state;
 }

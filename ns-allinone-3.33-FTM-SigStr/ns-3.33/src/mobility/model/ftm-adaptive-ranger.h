@@ -1,4 +1,6 @@
 #include <vector>
+#include <algorithm>
+#include <math.h>
 
 class FtmAdaptiveRanger{
     public:
@@ -19,13 +21,12 @@ class FtmAdaptiveRanger{
         ns3::Time simulation_time;
 
 
-        std::vector<std::pair<std::string, std::vector<int>>> brownian_data;
-        std::vector<std::pair<std::string, std::vector<int>>> fix_position_data;
+        std::vector<std::pair<std::string, std::vector<double>>> data;
         std::vector<std::pair<std::string, double>> hist_rtt;
         std::string state;
 
-        double LoadStatisticalVariables();
-        static std::vector<std::pair<std::string, std::vector<int>>> ReadCsv(std::string filename);
+        void LoadStatisticalVariables(bool LoadCsv);
+        static std::vector<std::pair<std::string, std::vector<double>>> ReadCsv(std::string filename);
         
 };
 
