@@ -9,6 +9,7 @@ def separate_csv():
     for simulation in simulation_types:
         aux = df.loc[(df.simulation_type == simulation)]
         print(aux.size)
+        aux = aux.drop(columns=['simulation_type'])
         aux.to_csv('data-' + simulation + '.csv')
         
     # os.remove("data/data.csv")  
