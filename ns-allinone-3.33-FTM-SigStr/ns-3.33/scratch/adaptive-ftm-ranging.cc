@@ -18,11 +18,18 @@
 #include "ns3/mgt-headers.h"
 #include "ns3/ftm-error-model.h"
 #include "ns3/pointer.h"
+#include "../src/mobility/model/ftm-adaptive-ranger.cc"
 #include <vector>
+
+NS_LOG_COMPONENT_DEFINE ("FtmAdaptiveAlgorithm");
+
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("FtmAdaptiveAlgorithm");
+void configureFtm(FtmParams &ftm_params);
+void runSimulation();
+static void GenerateTraffic ();
+void SessionOver(FtmSession session);
 
 Ptr<WirelessFtmErrorModel::FtmMap> map;
 Ptr<WifiNetDevice> _ap;
@@ -30,88 +37,12 @@ Ptr<WifiNetDevice> _sta;
 Address recvAddr;
 double t1;
 double t2; 
-int session_counter = 0;
-int measurements = 20000;
-int analysis_window = 10;
-int same_state_counter = 0;
-std::vector<double> hist_rtt;
-std::string state = "fix_position";
-double intial_distance = 10.0;
 
-bool dynamic_mode = false;
-double simulation_time = 4;
 
+
+FtmAdaptiveRanger myRanger;
 Vector initial_position = Vector(0, 0, 0); //this positions will be used for the mean 
 Vector final_position = Vector(0, 0, 0);	//position in the markov meassurements
-
-struct {             
-	int min_delta_ftm = 15;         
-	int burst_period = 10;         
-	int burst_exponent = 2;         
-	int burst_duration = 10;         
-	int ftm_per_burst = 2;         
-} FtmParameters; 
-
-void SessionOver (FtmSession session);
-
-//configures the parameters of the ftm protocol
-void configureFtm(FtmParams &ftm_params){
-  ftm_params.SetStatusIndication(FtmParams::RESERVED);
-  ftm_params.SetStatusIndicationValue(0);
-
-  //protocol parameters
-  ftm_params.SetMinDeltaFtm(FtmParameters.min_delta_ftm); //100 us between frames
-  ftm_params.SetBurstDuration(FtmParameters.burst_duration); //32 ms burst duration, this needs to be larger due to long processing delay until transmission
-  ftm_params.SetNumberOfBurstsExponent(FtmParameters.burst_exponent); //4 bursts
-  ftm_params.SetBurstPeriod(FtmParameters.burst_period); //1000 ms between burst periods
-  ftm_params.SetFtmsPerBurst(FtmParameters.ftm_per_burst);
-
-  ftm_params.SetPartialTsfNoPref(true);
-  ftm_params.SetAsap(true);
-}
-
-void analysis(){
-    if (abs(hist_rtt[0]-hist_rtt[1])/hist_rtt[1] > 0.05){
-        if (state == "fix_position"){
-            state="transition";
-        } 
-        else if (state == "transition"){
-            state="brownian";
-            same_state_counter = 0;
-            FtmParameters.burst_exponent = 2;
-            FtmParameters.ftm_per_burst = 2;
-            FtmParameters.burst_duration = 10;
-            FtmParameters.burst_period = 10;
-        } 
-        else if (state == "brownian") same_state_counter++;
-    }
-
-    //not moving and last state was brownian
-    else if (state == "brownian"){
-        same_state_counter = 0;
-        state = "transition";
-    }
-
-    //not moving and last state was fix_position
-    else if (state == "fix_position"){
-        FtmParameters.burst_exponent = (FtmParameters.burst_exponent < 4) ? (2 + (same_state_counter / 5)) : 4;
-        FtmParameters.ftm_per_burst = (FtmParameters.ftm_per_burst < 5 ) ? (2 + (same_state_counter/2)) : 5;
-        FtmParameters.burst_duration = (FtmParameters.burst_duration < 11) ? (7 + (same_state_counter / 2)) : 11;
-        FtmParameters.burst_period = (FtmParameters.burst_period < 12) ? (8 + (same_state_counter / 2)) : 12;
-        same_state_counter++;
-    }
-
-    //not moving and last state was fix_position
-    else if (state == "transition"){
-        state = "fix_position";
-        same_state_counter = 0;
-        FtmParameters.burst_exponent = 2;
-        FtmParameters.ftm_per_burst = 2;
-        FtmParameters.burst_duration = 10;
-        FtmParameters.burst_period = 10;
-    }
-
-}
 
 static void GenerateTraffic ()
 {
@@ -127,7 +58,6 @@ static void GenerateTraffic ()
 
 	if (session == 0)
 		NS_FATAL_ERROR ("ftm not enabled");
-		
 	Ptr<FtmErrorModel> error_model;
 
 	//create wireless error model
@@ -143,9 +73,7 @@ static void GenerateTraffic ()
 	session->SetFtmErrorModel(error_model);
 
 	//create the parameter for this session and set them
-	FtmParams ftm_params;
-	configureFtm(ftm_params);
-	session->SetFtmParams(ftm_params);
+	session->SetFtmParams(myRanger.GetParameters());
 
 	session->SetSessionOverCallback(MakeCallback(&SessionOver));
 	session->SessionBegin();
@@ -157,18 +85,9 @@ static void GenerateTraffic ()
 }
 
 void SessionOver(FtmSession session){
-    // std::cout << "FtmParameters.burst_exponent:" << FtmParameters.burst_exponent <<  std::endl;
-    // std::cout << "FtmParameters.burst_duration:" << FtmParameters.burst_duration <<  std::endl;
-    // std::cout << "FtmParameters.burst_period:" << FtmParameters.burst_period <<  std::endl;
-    // std::cout << "FtmParameters.ftm_per_burst:" << FtmParameters.ftm_per_burst <<  std::endl;
-    // std::cout << "FtmParameters.min_delta_ftm:" << FtmParameters.min_delta_ftm <<  std::endl;
-    // std::cout << "---------------------" <<  std::endl;
-
-
     std::string file_path = "./ftm_ranging/simulations/data/adaptive-algorithm-test/";
-    std::string file_name =  file_path + (dynamic_mode ? "adaptive-algorithm" : "static-algorithm");
-    t2 =  Simulator::Now().GetSeconds();
-    
+    std::string file_name =  file_path + "adaptive-algorithm";
+    t2 =  Simulator::Now().GetSeconds();    
     //expected distance & actual distance
     double expected_distance;
     final_position = _ap->GetNode()->GetObject<MobilityModel>()->GetPosition();
@@ -191,50 +110,16 @@ void SessionOver(FtmSession session){
 
     mean_sig_str = double(mean_sig_str / count);
 
-    output << FtmParameters.min_delta_ftm << " " << FtmParameters.burst_period << " " << FtmParameters.burst_exponent << " " << FtmParameters.burst_duration << " " << FtmParameters.ftm_per_burst << " "  << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) << " 2.5 " << final_position.x << " " << final_position.y <<"\n";
+    FtmParams parameters = myRanger.GetParameters();
+
+    output << std::to_string(parameters.GetMinDeltaFtm()) << " " << std::to_string(parameters.GetBurstPeriod()) << " " << std::to_string(parameters.GetNumberOfBurstsExponent()) << " " << std::to_string(parameters.GetBurstDuration()) << " " << std::to_string(parameters.GetFtmsPerBurst()) << " "  << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt/(pow(10,9))) << " 2.5 " << final_position.x << " " << final_position.y << " " <<  myRanger.GetSameStateCounter() << "\n";
     output.close();
 
     //for algorithm analysis purposes
-    hist_rtt.insert(hist_rtt.begin(), double(total_rtt / count));
-    if (dynamic_mode && hist_rtt.size() > 2){
-        analysis();
-    }
+    myRanger.AddRtt((total_rtt / count));
+    myRanger.Analysis();
 
-    Simulator::Schedule(Seconds (0.001), &GenerateTraffic);
-}
-
-void loadConfigurations(std::vector<std::vector<int>>& configurations){
-    if (!dynamic_mode){
-        std::ifstream file("./scratch/ftm-configurations.txt");
-        if (file.is_open()){
-            std::string line;
-            while (std::getline(file, line, '\n')) {
-                // vector<double> configuration;
-                // using printf() in all tests for consistency
-                std::stringstream configuration(line);
-                std::string segment;
-                std::vector<int> seglist;
-                while(std::getline(configuration, segment, ' '))
-                    seglist.push_back(stoi(segment));
-                
-                configurations.push_back(seglist);
-            
-            }
-            file.close();
-        }
-    }else{
-        configurations.push_back({15,7,1,7,1});
-    }
-}
-
-void updateParameters(std::vector<int>& configuration){
-    FtmParameters.min_delta_ftm = configuration[0]; 
-    FtmParameters.burst_period = configuration[1];
-    FtmParameters.burst_exponent = configuration[2];
-    FtmParameters.burst_duration = configuration[3];
-    FtmParameters.ftm_per_burst = configuration[4];
-
-    std::cout << "Parameters uploaded" << std::endl;
+    Simulator::Schedule(Seconds (0.1), &GenerateTraffic);
 }
 
 void runSimulation(){
@@ -270,7 +155,6 @@ void runSimulation(){
 	m1->DoSetPosition(Vector (0, 0, 0));
 
 	// end assign mobility model
-
     
 
     WifiHelper wifi;
@@ -329,28 +213,19 @@ void runSimulation(){
     // Tracing
     wifiPhy.EnablePcap ("ftm-ranging", devices);
 
-    Simulator::ScheduleNow (&GenerateTraffic);
-    Simulator::Stop (Hours (simulation_time));
+    Simulator::Schedule(Seconds(0.001), &GenerateTraffic);
+    Simulator::Stop (myRanger.GetSimulationTime());
     Simulator::Run ();
     Simulator::Destroy();
 }
 
 int main (int argc, char *argv[]){
-    //Load FTM map
     map = CreateObject<WirelessFtmErrorModel::FtmMap> ();
     map->LoadMap ("src/wifi/ftm_map/FTM_Wireless_Error.map");
 	
     Time::SetResolution(Time::PS);
 
-    std::vector<std::vector<int>> configurations;
-    loadConfigurations(configurations);
-    for (unsigned i = 0; configurations.size(); i++){
-        for (unsigned j = 0; j < configurations[i].size(); j++){
-            std::cout << configurations[i][j] << " ";
-        }
-        std::cout << std::endl;
-        updateParameters(configurations[i]);
-        runSimulation();
-    }
+    runSimulation();
+    
 	return 0;
 }
