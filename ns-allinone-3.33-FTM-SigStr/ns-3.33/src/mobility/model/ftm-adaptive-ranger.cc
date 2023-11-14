@@ -6,7 +6,8 @@ FtmAdaptiveRanger::FtmAdaptiveRanger(){
     same_state_counter = 0;
     std_deviation = 0;
 
-    data = state == "brownian" ? ReadCsv("ftm_ranging/simulations/data/data-brownian.csv") : ReadCsv("ftm_ranging/simulations/data/data-fix_position.csv");
+    brownian_data = ReadCsv("ftm_ranging/simulations/data/data-brownian.csv");
+    fix_position_data = ReadCsv("ftm_ranging/simulations/data/data-fix_position.csv");
 
     parameters.SetMinDeltaFtm(15);
     parameters.SetBurstDuration(7);
@@ -14,9 +15,9 @@ FtmAdaptiveRanger::FtmAdaptiveRanger(){
     parameters.SetBurstPeriod(7);
     parameters.SetFtmsPerBurst(4);
 
-    LoadStatisticalVariables(true);
+    LoadStatisticalVariables();
     //minutes
-    simulation_time = ns3::Minutes(60);
+    simulation_time = ns3::Minutes(1);
 }
 
 ns3::Time
@@ -120,23 +121,20 @@ FtmAdaptiveRanger::ReadCsv(std::string filename){
 //    -distribution_mean
 //    -standard_deviation
 void 
-FtmAdaptiveRanger::LoadStatisticalVariables(bool LoadCsv){
+FtmAdaptiveRanger::LoadStatisticalVariables(){
     double total_mean_percentage = 0;
     double total_mean = 0;
     double mean_distance = 0;
     int count = 0;
     bool same_configuration = false;
+    std::vector<std::pair<std::string, std::vector<double>>>* data = (state == "brownian") ? &brownian_data : &fix_position_data;
 
-    if(LoadCsv)
-        data = state == "brownian" ? ReadCsv("ftm_ranging/simulations/data/data-brownian.csv") : ReadCsv("ftm_ranging/simulations/data/data-fix_position.csv");
-
-
-    for (unsigned i = 0; i < data[3].second.size(); i++){
-        same_configuration = data[3].second[i] == double(parameters.GetMinDeltaFtm()) && data[4].second[i] == double(parameters.GetBurstPeriod()) && data[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && data[6].second[i] == double(parameters.GetBurstDuration()) && data[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
+    for (unsigned i = 0; i < (*data)[3].second.size(); i++){
+        same_configuration = (*data)[3].second[i] == double(parameters.GetMinDeltaFtm()) && (*data)[4].second[i] == double(parameters.GetBurstPeriod()) && (*data)[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && (*data)[6].second[i] == double(parameters.GetBurstDuration()) && (*data)[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
         if (same_configuration){
-            total_mean_percentage += (data[8].second[i]/data[1].second[i]); 
-            total_mean += data[8].second[i]; 
-            mean_distance += data[1].second[i];
+            total_mean_percentage += ((*data)[8].second[i]/(*data)[1].second[i]); 
+            total_mean += (*data)[8].second[i]; 
+            mean_distance += (*data)[1].second[i];
             count++;
         }
     }
@@ -148,12 +146,12 @@ FtmAdaptiveRanger::LoadStatisticalVariables(bool LoadCsv){
     std::cout << total_mean_percentage << "% mean error" << std::endl;
 
     std_deviation = 0;
-    for (unsigned i = 0; i < data[3].second.size(); i++){
-        // same_configuration = data[3].second[i] == double(parameters.GetMinDeltaFtm()) && data[4].second[i] == double(parameters.GetBurstPeriod()) && data[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && data[6].second[i] == double(parameters.GetBurstDuration()) && data[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
-        // same_configuration = data[3].second[i] == double(parameters.GetMinDeltaFtm()) && data[4].second[i] == double(parameters.GetBurstPeriod()) && data[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && data[6].second[i] == double(parameters.GetBurstDuration()) && data[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
-        same_configuration = data[3].second[i] == double(parameters.GetMinDeltaFtm()) && data[4].second[i] == double(parameters.GetBurstPeriod()) && data[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && data[6].second[i] == double(parameters.GetBurstDuration()) && data[7].second[i] == double(parameters.GetFtmsPerBurst()) ;        
+    for (unsigned i = 0; i < (*data)[3].second.size(); i++){
+        // same_configuration = (*data)[3].second[i] == double(parameters.GetMinDeltaFtm()) && (*data)[4].second[i] == double(parameters.GetBurstPeriod()) && (*data)[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && (*data)[6].second[i] == double(parameters.GetBurstDuration()) && (*data)[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
+        // same_configuration = (*data)[3].second[i] == double(parameters.GetMinDeltaFtm()) && (*data)[4].second[i] == double(parameters.GetBurstPeriod()) && (*data)[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && (*data)[6].second[i] == double(parameters.GetBurstDuration()) && (*data)[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
+        same_configuration = (*data)[3].second[i] == double(parameters.GetMinDeltaFtm()) && (*data)[4].second[i] == double(parameters.GetBurstPeriod()) && (*data)[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) && (*data)[6].second[i] == double(parameters.GetBurstDuration()) && (*data)[7].second[i] == double(parameters.GetFtmsPerBurst()) ;        
         if (same_configuration){
-            std_deviation += std::pow(data[8].second[i] - total_mean, 2); 
+            std_deviation += std::pow((*data)[8].second[i] - total_mean, 2); 
         }
 
 
@@ -224,7 +222,7 @@ FtmAdaptiveRanger::Analysis(){
     }
 
     if (config_change){
-        LoadStatisticalVariables(_state != state ? true : false);
+        LoadStatisticalVariables();
         std::cout << "-------------" << std::endl;
     }
     state = _state;

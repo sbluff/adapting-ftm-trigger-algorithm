@@ -21,11 +21,12 @@ class FtmAdaptiveRanger{
         ns3::Time simulation_time;
 
 
-        std::vector<std::pair<std::string, std::vector<double>>> data;
+        std::vector<std::pair<std::string, std::vector<double>>> brownian_data;
+        std::vector<std::pair<std::string, std::vector<double>>> fix_position_data;
         std::vector<std::pair<std::string, double>> hist_rtt;
         std::string state;
 
-        void LoadStatisticalVariables(bool LoadCsv);
+        void LoadStatisticalVariables();
         static std::vector<std::pair<std::string, std::vector<double>>> ReadCsv(std::string filename);
         
 };
