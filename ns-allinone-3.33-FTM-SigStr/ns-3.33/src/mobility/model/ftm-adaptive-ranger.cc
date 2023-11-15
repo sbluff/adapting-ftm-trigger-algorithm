@@ -2,6 +2,7 @@
 
 //constructor of the class
 FtmAdaptiveRanger::FtmAdaptiveRanger(){
+    version = 1.1;
     state = "brownian";
     same_state_counter = 0;
     std_deviation = 0;
@@ -17,24 +18,37 @@ FtmAdaptiveRanger::FtmAdaptiveRanger(){
 
     LoadStatisticalVariables();
     //minutes
-    simulation_time = ns3::Minutes(1);
+    simulation_time = ns3::Minutes(10);
 }
 
+// returns the version of the algorithm
+// v0: static algorithm
+// v1: two static configurations
+// v1.1: smoothness in burst_exponent between static configs
+double
+FtmAdaptiveRanger::GetVersion(){
+    return version;
+}
+
+//returns the time passed to the ns3 simulator
 ns3::Time
 FtmAdaptiveRanger::GetSimulationTime(){
     return simulation_time;
 }
 
+//returns the current value FTM parameters of the algorithm
 ns3::FtmParams
 FtmAdaptiveRanger::GetParameters(){
     return parameters;
 }
 
+//returns all the RTT measured during the execution of the algorithm
 std::vector<std::pair<std::string, double>> 
 FtmAdaptiveRanger::GetHistRtt(){
     return hist_rtt;
 }
 
+//returns the last RTT obtaines in the execution of the algorithm
 std::pair<std::string, double> 
 FtmAdaptiveRanger::GetLastRtt(){
     if (hist_rtt.size() > 0)
@@ -43,18 +57,20 @@ FtmAdaptiveRanger::GetLastRtt(){
         return std::make_pair("empty", 0);    
 }
 
+//returns the counter on how many sessions the algorithm has perceived the same state
 int 
 FtmAdaptiveRanger::GetSameStateCounter(){
     return same_state_counter;
 }
 
+//adds an entry to the hist_rtt attribute
 void
 FtmAdaptiveRanger::AddRtt(double rtt){
     hist_rtt.insert(hist_rtt.begin(), std::make_pair(state, rtt));
     std::cout << "Rtt entry added: " << state << " " << rtt << std::endl;
 }
 
-    // Reads a CSV file into a std::vector of <string, std::vector<int>> pairs where
+// Reads a CSV file into a std::vector of <string, std::vector<int>> pairs where
 // each pair represents <column name, column values>
 std::vector<std::pair<std::string, std::vector<double>>> 
 FtmAdaptiveRanger::ReadCsv(std::string filename){
@@ -160,6 +176,7 @@ FtmAdaptiveRanger::LoadStatisticalVariables(){
     std::cout << std_deviation  << "% std deviation" << std::endl;
 }
 
+//based on the last RTT measurements, the current state and some statistical variables; update the state and set new values to ftm parameters
 void 
 FtmAdaptiveRanger::Analysis(){
     bool config_change = false;
@@ -197,7 +214,7 @@ FtmAdaptiveRanger::Analysis(){
         else if (state == "fix_position"){
             parameters.SetMinDeltaFtm(15);
             parameters.SetBurstDuration(10);
-            parameters.SetNumberOfBurstsExponent(4);
+            parameters.SetNumberOfBurstsExponent(parameters.GetNumberOfBurstsExponent() < 4 ? (1 + same_state_counter/2) : 4);
             parameters.SetBurstPeriod(10);
             parameters.SetFtmsPerBurst(5);
             same_state_counter++;
@@ -214,7 +231,7 @@ FtmAdaptiveRanger::Analysis(){
             same_state_counter = 0;
             parameters.SetMinDeltaFtm(15);
             parameters.SetBurstDuration(10);
-            parameters.SetNumberOfBurstsExponent(4);
+            parameters.SetNumberOfBurstsExponent(parameters.GetNumberOfBurstsExponent() < 4 ? (1 + same_state_counter/2) : 4);
             parameters.SetBurstPeriod(10);
             parameters.SetFtmsPerBurst(5);
             config_change = true;

@@ -9,6 +9,7 @@ class FtmAdaptiveRanger{
         ns3::Time GetSimulationTime();
         std::vector<std::pair<std::string, double>> GetHistRtt();
         std::pair<std::string, double> GetLastRtt();
+        double GetVersion();
         int GetSameStateCounter();
         void AddRtt(double rtt);
         void Analysis();
@@ -19,6 +20,7 @@ class FtmAdaptiveRanger{
         double std_deviation;
         int same_state_counter;
         ns3::Time simulation_time;
+        double version;
 
 
         std::vector<std::pair<std::string, std::vector<double>>> brownian_data;
