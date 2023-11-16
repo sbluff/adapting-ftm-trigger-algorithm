@@ -20,13 +20,14 @@ files = ['./adaptive-algorithm-test/adaptive-algorithm', './adaptive-algorithm-t
 simulation_types = ['adaptive_algorithm', 'static_algorithm']
 
 with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
-    fieldnames = ['real_distance','meassured_distance','simulation_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage', 'efficiency', 'velocity', 'x_position', 'y_position']
+    fieldnames = ['real_distance','meassured_distance','simulation_type','min_delta_ftm','burst_period','burst_exponent','burst_duration','ftm_per_burst', 'error', 'session_time', 'channel_time', 'channel_usage', 'efficiency', 'velocity', 'x_position', 'y_position', 'version', 'ts']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     count = 0
     for file in files:
         if not file_is_empty(file):
             curr_measurement = np.loadtxt(file)
+            ts = 0
             for m in curr_measurement:
                 print(m)
                 value = int(m[6]) / 2 / (10000 * 0.3)
@@ -47,8 +48,11 @@ with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
                     'efficiency':1/(float(channel_usage * abs(value-m[5]))) if channel_usage * abs(value-m[5]) != 0 else 0,
                     'velocity': m[10],
                     'x_position': m[11],
-                    'y_position': m[12]
+                    'y_position': m[12],
+                    'version': m[14] if "static-algorithm" not in file else 0,
+                    'ts': ts
                 })
+                ts += abs(m[8])
         count += 1       
 
 print("Data exported correctly!")

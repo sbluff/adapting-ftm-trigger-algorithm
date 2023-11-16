@@ -9,22 +9,52 @@ from matplotlib.ticker import FormatStrFormatter
 
 
 #studies the different distributions of the error for different values of each parameter
-def errorHistograms(df):
+def ErrorHistograms(df):
     values = df['simulation_type'].unique()
+    versions = df.loc[df.simulation_type == 'adaptive_algorithm']['version'].unique()
+    print(versions)
     for value in values:
         if value == "static_algorithm":
             hist = df.loc[(df.burst_exponent == 3) & (df.simulation_type == value)] 
-            hist 
+            hist['error'].hist(range=[-10,10], edgecolor='black', density="True", grid=True, label=value, bins=80, alpha=0.5)  
         else:
-            hist = df.loc[df.simulation_type == value]
-        hist['error'].hist(range=[-10,10], edgecolor='black', density="True", label=value, grid=True, bins=80, alpha=0.5)  
+            for version in versions:
+                hist = df.loc[(df.simulation_type == value) & (df.version == version)]
+                hist['error'].hist(range=[-10,10], edgecolor='black', density="True", grid=True, label=value+'v'+str(version), bins=80, alpha=0.5)  
     plt.legend(loc="upper left")
     plt.savefig("./algorithm/error.pdf")
     
-def trajectoryPlot(df):
-    g = sns.relplot(data=df, x="x_position", y="y_position", col="simulation_type")
-    plt.savefig("./algorithm/trajectory.pdf")
+def RangePlot(df):
+    df = df.loc[df.version == 1.1].head(100)
+    df.set_index('ts', inplace=True)
+    df['real_distance'].plot( marker='o', c="purple", markerfacecolor='yellow', markersize=1.5, label="real_distance")
+    df['meassured_distance'].plot( marker='o', c="blue", markerfacecolor='red', markersize=1.5, label="measured_distance", drawstyle='steps')
+    plt.xlabel('Session Time(s)')
+    plt.ylabel('Nodes Distance(m)')
+    plt.title('Nodes Ranging Distance')
+    plt.legend(loc="upper left")
+    plt.savefig("./algorithm/nodes-ranging-distance-v1-1.pdf")
+    
+def ErrorAnalysis(df):
+    versions = df['version'].unique()
+    count = 0
+    data = []
+    for version in versions:
+        error = 0
+        channel_time = 0
+        hist = df.loc[df.version == version]
+        for ind in hist.index:
+            channel_time += hist['channel_time'][ind]
+            if count != 0:  
+                error += (hist['ts'][ind] - hist['ts'][ind-1]) * (abs(hist['meassured_distance'][ind-1] - hist['real_distance'][ind-1]) + 0.5 * (hist['real_distance'][ind-1] - hist['real_distance'][ind])) 
+            count += 1
+        data.append([version, error, channel_time, count, error/count, channel_time/error])    
+        count = 0    
+        print(data)
+    error_csv = pd.DataFrame(data, columns=['version', 'error', 'channel_time', 'measurements', 'measurement_error', 'measurement_channel_time'])
+    error_csv.to_csv('./algorithm/error.csv')    
     
 algorithm_data = pd.read_csv('../data/data-algorithm.csv')   
-errorHistograms(algorithm_data)   
-trajectoryPlot(algorithm_data)     
+# ErrorHistograms(algorithm_data)   
+# RangePlot(algorithm_data)  
+ErrorAnalysis(algorithm_data)   
