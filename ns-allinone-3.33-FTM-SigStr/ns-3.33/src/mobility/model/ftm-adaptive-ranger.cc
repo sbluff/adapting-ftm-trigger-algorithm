@@ -3,7 +3,7 @@
 // constructor of the class
 FtmAdaptiveRanger::FtmAdaptiveRanger()
 {
-    version = 1.1;
+    version = 1.2;
     state = "brownian";
     transition = false;
     same_state_counter = 0;
@@ -12,21 +12,18 @@ FtmAdaptiveRanger::FtmAdaptiveRanger()
     brownian_data = ReadCsv("ftm_ranging/simulations/data/data-brownian.csv");
     fix_position_data = ReadCsv("ftm_ranging/simulations/data/data-fix_position.csv");
 
-    parameters.SetMinDeltaFtm(15);
-    parameters.SetBurstDuration(7);
-    parameters.SetNumberOfBurstsExponent(1);
-    parameters.SetBurstPeriod(7);
-    parameters.SetFtmsPerBurst(4);
+    SetBrownianParameters();
 
     LoadStatisticalVariables();
     // minutes
-    simulation_time = ns3::Minutes(2);
+    simulation_time = ns3::Hours(1);
 }
 
 // returns the version of the algorithm
 // v0: static algorithm
 // v1: two static configurations
 // v1.1: smoothness in burst_exponent between static configs
+// v1.2: smoothness in burst_duration and burst_period between configs
 double
 FtmAdaptiveRanger::GetVersion()
 {
@@ -308,10 +305,10 @@ void FtmAdaptiveRanger::SetBrownianParameters()
 void FtmAdaptiveRanger::SetFixPositionParameters()
 {
     parameters.SetMinDeltaFtm(15);
-    parameters.SetBurstDuration(10);
-    parameters.SetNumberOfBurstsExponent((parameters.GetNumberOfBurstsExponent() < 4 && same_state_counter < 8) ? (1 + same_state_counter / 2) : 4);
-    parameters.SetBurstPeriod(10);
-    parameters.SetFtmsPerBurst(5);
+    parameters.SetBurstDuration((parameters.GetBurstDuration() < 10 && same_state_counter <= 6) ? (7 + same_state_counter / 2) : 10);
+    parameters.SetNumberOfBurstsExponent((parameters.GetNumberOfBurstsExponent() < 4 && same_state_counter <= 8) ? (1 + same_state_counter / 2) : 4);
+    parameters.SetBurstPeriod((parameters.GetBurstPeriod() < 10 && same_state_counter <= 6) ? (7 + same_state_counter / 2) : 10);
+    parameters.SetFtmsPerBurst(4);
 }
 
 // based on the last RTT measurements, the current state and some statistical
