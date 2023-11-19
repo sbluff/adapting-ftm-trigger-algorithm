@@ -305,10 +305,37 @@ void FtmAdaptiveRanger::SetBrownianParameters()
 void FtmAdaptiveRanger::SetFixPositionParameters()
 {
     parameters.SetMinDeltaFtm(15);
-    parameters.SetBurstDuration((parameters.GetBurstDuration() < 10 && same_state_counter <= 6) ? (7 + same_state_counter / 2) : 10);
-    parameters.SetNumberOfBurstsExponent((parameters.GetNumberOfBurstsExponent() < 4 && same_state_counter <= 8) ? (1 + same_state_counter / 2) : 4);
-    parameters.SetBurstPeriod((parameters.GetBurstPeriod() < 10 && same_state_counter <= 6) ? (7 + same_state_counter / 2) : 10);
-    parameters.SetFtmsPerBurst(4);
+    if (version == 0)
+    {
+        parameters.SetBurstDuration(7);
+        parameters.SetNumberOfBurstsExponent(1);
+        parameters.SetBurstPeriod(7);
+        parameters.SetFtmsPerBurst(4);
+    }
+
+    else if (version == 1.0)
+    {
+        parameters.SetBurstDuration(10);
+        parameters.SetNumberOfBurstsExponent(4);
+        parameters.SetBurstPeriod(10);
+        parameters.SetFtmsPerBurst(4);
+    }
+
+    else if (version == 1.1)
+    {
+        parameters.SetBurstDuration(10);
+        parameters.SetNumberOfBurstsExponent((parameters.GetNumberOfBurstsExponent() < 4 && same_state_counter <= 8) ? (1 + same_state_counter / 2) : 4);
+        parameters.SetBurstPeriod(10);
+        parameters.SetFtmsPerBurst(4);
+    }
+
+    else if (version == 1.2)
+    {
+        parameters.SetBurstDuration((parameters.GetBurstDuration() < 10 && same_state_counter <= 6) ? (7 + same_state_counter / 2) : 10);
+        parameters.SetNumberOfBurstsExponent((parameters.GetNumberOfBurstsExponent() < 4 && same_state_counter <= 8) ? (1 + same_state_counter / 2) : 4);
+        parameters.SetBurstPeriod((parameters.GetBurstPeriod() < 10 && same_state_counter <= 6) ? (7 + same_state_counter / 2) : 10);
+        parameters.SetFtmsPerBurst(4);
+    }
 }
 
 // based on the last RTT measurements, the current state and some statistical
