@@ -35,6 +35,8 @@ Ptr<WifiNetDevice> _sta;
 Address recvAddr;
 double t1;
 double t2;
+double speed = 2.5;
+double pause = 20.0; // seconds to stop
 
 FtmAdaptiveRanger myRanger;
 Vector initial_position = Vector(0, 0, 0); // this positions will be used for the mean
@@ -77,7 +79,7 @@ static void GenerateTraffic()
 void SessionOver(FtmSession session)
 {
     std::string file_path = "./ftm_ranging/simulations/data/adaptive-algorithm-test/";
-    std::string file_name = file_path + "adaptive-algorithm-test";
+    std::string file_name = file_path + "adaptive-algorithm";
     t2 = Simulator::Now().GetSeconds();
     // expected distance & actual distance
     double expected_distance;
@@ -104,7 +106,7 @@ void SessionOver(FtmSession session)
 
     FtmParams parameters = myRanger.GetParameters();
 
-    output << std::to_string(parameters.GetMinDeltaFtm()) << " " << std::to_string(parameters.GetBurstPeriod()) << " " << std::to_string(parameters.GetNumberOfBurstsExponent()) << " " << std::to_string(parameters.GetBurstDuration()) << " " << std::to_string(parameters.GetFtmsPerBurst()) << " " << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt / (pow(10, 9))) << " 2.5 " << final_position.x << " " << final_position.y << " " << myRanger.GetSameStateCounter() << " " << myRanger.GetVersion() << "\n";
+    output << std::to_string(parameters.GetMinDeltaFtm()) << " " << std::to_string(parameters.GetBurstPeriod()) << " " << std::to_string(parameters.GetNumberOfBurstsExponent()) << " " << std::to_string(parameters.GetBurstDuration()) << " " << std::to_string(parameters.GetFtmsPerBurst()) << " " << expected_distance << " " << double(total_rtt / count) << " " << mean_sig_str << " " << t2 - t1 << " " << double(total_rtt / (pow(10, 9))) << " 2.5 " << final_position.x << " " << final_position.y << " " << myRanger.GetSameStateCounter() << " " << myRanger.GetVersion() << " " << pause << " " << speed << "\n";
     output.close();
 
     // for algorithm analysis purposes
@@ -127,10 +129,11 @@ void runSimulation()
 
     // assign mobility model
     MobilityHelper mobility;
-    std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(2.5) + "]";
+    std::string _speed = "ns3::ConstantRandomVariable[Constant=" + std::to_string(speed) + "]";
     mobility.SetMobilityModel("ns3::RandomDirection2dMobilityModel",
                               "Speed", StringValue(_speed),
-                              "Bounds", StringValue("0|" + std::to_string(15) + "|0|" + std::to_string(15)));
+                              "Bounds", StringValue("0|" + std::to_string(15) + "|0|" + std::to_string(15)),
+                              "Pause", StringValue("ns3::ConstantRandomVariable[Constant=" + std::to_string(pause) + "]"));
 
     mobility.SetPositionAllocator("ns3::RandomBoxPositionAllocator",
                                   "X", StringValue("ns3::UniformRandomVariable[Min=" + std::to_string(10) + "|Max=0]"),

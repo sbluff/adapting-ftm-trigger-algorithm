@@ -10,7 +10,7 @@ from matplotlib.ticker import FormatStrFormatter
 
 #studies the different distributions of the error for different values of each parameter
 def ErrorHistograms(df):
-    df = df.loc[df.simulation_type == 'adaptive_algorithm']
+    df = df.loc[df.version != 0]
     versions = df['version'].unique()
     print(versions)
 
@@ -50,10 +50,10 @@ def ErrorAnalysis(df):
         data.append([version, error, channel_time, session_time, count, error/count, channel_time/error, session_time/count])    
         count = 0    
         print(data)
-    error_csv = pd.DataFrame(data, columns=['version', 'error', 'channel_time', 'measurements', 'session_time', 'measurement_error', 'measurement_channel_time', 'measurement_session_time'])
+    error_csv = pd.DataFrame(data, columns=['version', 'error', 'channel_time', 'session_time', 'measurements', 'measurement_error', 'measurement_channel_time', 'measurement_session_time'])
     error_csv.to_csv('./algorithm/error.csv')    
     
 algorithm_data = pd.read_csv('../data/data-algorithm.csv')   
-# ErrorHistograms(algorithm_data)   
+ErrorHistograms(algorithm_data)   
 RangePlot(algorithm_data)  
 ErrorAnalysis(algorithm_data)   
