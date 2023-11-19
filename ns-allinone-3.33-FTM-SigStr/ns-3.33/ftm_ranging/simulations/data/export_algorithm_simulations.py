@@ -49,8 +49,8 @@ with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
                     'y_position': m[12],
                     'version': m[14] if "static-algorithm" not in file else 0,
                     'ts': ts,
-                    'speed': m[15],
-                    'pause': m[16],
+                    'pause': m[15],
+                    'speed': m[16],
                 })
                 ts += abs(m[8])
         count += 1       
