@@ -45,10 +45,10 @@ def RangePlot(df):
         print(version)
         for pause in pause_times:
             hist = df
-            hist = hist.loc[(hist.version == version) & (hist.pause == pause)].head(100)
+            hist = hist.loc[(hist.version == version) & (hist.pause == pause)].head(50)
             hist.set_index('ts', inplace=True)
             hist['real_distance'].plot( marker='o', c="purple", markerfacecolor='yellow', markersize=1.5, label="real_distance")
-            hist['meassured_distance'].plot( marker='o', c="blue", markerfacecolor='red', markersize=1.5, label="measured_distance", drawstyle='steps')
+            hist['meassured_distance'].plot( marker='o', c="blue", markerfacecolor='red', markersize=1.5, label="measured_distance", drawstyle='steps-post')
             plt.xlabel('Session Time(s)')
             plt.ylabel('Nodes Distance(m)')
             plt.title('Nodes Ranging Distance')
