@@ -6,6 +6,20 @@ import csv
 import glob
 import numpy as np
 from separate_data import separate_csv
+from scipy.integrate import quad
+from matplotlib.lines import Line2D
+
+#real distance between two timestamps
+def f1(x):
+    return x 
+
+def f2(x):
+    return 1
+    
+#measured distance between two timestamps
+def g(x):
+    return 1
+
 
 def file_is_empty(filename):
     with open(filename)as fin:
@@ -27,8 +41,23 @@ with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
         if not file_is_empty(file):
             curr_measurement = np.loadtxt(file)
             ts = 0
+            
+            t0 = float(previous_measurement['ts'])
+            t1 = float(m['ts'])
+            r0 = previous_measurement['real_distance']
+            r1 = m['real_distance']
+            m = previous_measurement['meassured_distance']
+
+            previous_measurement = []
             for m in curr_measurement:
-                print(m)
+                error_area = 0
+                if previous_measurement != []:
+                    t0 = float(previous_measurement['ts'])
+                    t1 = float(m['ts'])
+                    r0 = previous_measurement['real_distance']
+                    r1 = m['real_distance']
+                    m = previous_measurement['meassured_distance']
+                    error_area = quad(f1, t0, t1)[0] * ((r1-r0)/(t1-t0)) + quad(f2, t0, t1)[0] * (t1*r0 - t0*r1)/(t1-t0) - quad(g, t0, t1)[0] * m
                 value = int(m[6]) / 2 / (10000 * 0.3)
                 channel_usage = abs(float(m[9]/m[8])*100)
                 writer.writerow({
@@ -40,6 +69,7 @@ with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
                     'burst_duration': m[3],
                     'ftm_per_burst':m[4],
                     'error': value-m[5],
+                    'error_area': error_area,
                     'session_time': abs(m[8]), 
                     'channel_time': abs(m[9]),
                     'channel_usage': channel_usage,
@@ -53,6 +83,7 @@ with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
                     'speed': m[16],
                 })
                 ts += abs(m[8])
+                previous_measurement = m
         count += 1       
 
 print("Data exported correctly!")
