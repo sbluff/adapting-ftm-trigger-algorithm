@@ -38,11 +38,11 @@ with open('./data.csv', 'w+', newline='') as csvfile:
                         writer.writerow({
                             'real_distance': m[0],
                             'meassured_distance': value,
-                            'simulation_type': meassurment_type,
+                            'error': value-m[0],
                             'min_delta_ftm': parameters[0],'burst_period': parameters[1],
+                            'simulation_type': meassurment_type,
                             'burst_exponent': parameters[2],'burst_duration': parameters[3],
                             'ftm_per_burst':parameters[4],
-                            'error': value-m[0],
                             'session_time': abs(m[3]), 
                             'channel_time': abs(m[4]),
                             'channel_usage': channel_usage,
