@@ -6,15 +6,46 @@ import numpy as np
 import os
 import json
 import matplotlib
+import pylab as pl
 from matplotlib.ticker import FormatStrFormatter
 from scipy.integrate import quad
 from matplotlib.lines import Line2D
+from scipy import stats
 
 t0 = 0
 t1 = 0
 r0 = 0
 r1 = 0
 m = 0
+
+class Radar(object):
+    def __init__(self, fig, titles, labels, rect=None):
+        if rect is None:
+            rect = [0.05, 0.05, 0.95, 0.95]
+
+        self.n = len(titles)
+        self.angles = np.arange(90, 90+360, 360.0/self.n)
+        self.axes = [fig.add_axes(rect, projection="polar", label="axes%d" % i) 
+                         for i in range(self.n)]
+
+        self.ax = self.axes[0]
+        self.ax.set_thetagrids(self.angles, labels=titles, fontsize=14)
+
+        for ax in self.axes[1:]:
+            ax.patch.set_visible(False)
+            ax.grid("off")
+            ax.xaxis.set_visible(False)
+
+        for ax, angle, label in zip(self.axes, self.angles, labels):
+            ax.set_rgrids(range(1, 6), angle=angle, labels=label)
+            ax.spines["polar"].set_visible(False)
+            ax.set_ylim(0, 5)
+
+    def plot(self, values, *args, **kw):
+        angle = np.deg2rad(np.r_[self.angles, self.angles[0]])
+        values = np.r_[values, values[0]]
+        self.ax.plot(angle, values, *args, **kw)
+
 
 
 #real distance between two timestamps
@@ -45,17 +76,35 @@ def ErrorHistograms(df):
 def ErrorKde(df):  
     versions = df['version'].unique()
     pause_times = df['pause'].unique()
-    print(pause_times)
+    
+    for version in versions:
+        hist = df.loc[(df.version == version)]
+        # hist['error_area_quantile'] = hist['error_area'].quantile(q=0.95)
+        print(hist['error_area'].quantile(q=0.95))
+        plt.title("Error / Channel Usage / Efficiency for version " + str(version), {
+            'fontsize': 16,
+            'fontweight' : 16,
+            'verticalalignment': 'center',
+            'horizontalalignment': 'center'
+        })
+        fig, axes = plt.subplots(3, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        ax = axes.ravel()
 
-    for pause in pause_times:
-        for version in versions:
-            # if version != 1:
-            # hist = df.loc[df.version == version]
-            # hist['error'].kde(range=[-10,10], edgecolor='black', density="True", grid=True, label='v'+str(version), bins=80, alpha=0.5)
-            sns.kdeplot(df.loc[(df['version']==version) & (df['pause']==pause), 'error'], label='v'+str(version))  
-        plt.legend(loc="upper left")
-        plt.title("KDEs for pause of " + str(pause) + "s")
-        plt.savefig("./algorithm/kde-"+str(pause)+"s.pdf")
+        ax[0].tick_params(axis='both', labelsize=14)
+        ax[0].set(xlabel="Error (m²)")
+        sns.kdeplot(data=hist.loc[df.error_area < hist['error_area'].quantile(q=0.95)], x = 'error_area', ax=ax[0], hue="pause", fill=True, common_norm=False, alpha=.5, linewidth=0, palette="crest") 
+        
+        
+        ax[1].tick_params(axis='both', which='minor', labelsize=14)
+        ax[1].set(xlabel="Channel Usage (%)")
+        sns.kdeplot(data=hist, x = 'channel_usage', ax=ax[1], hue="pause", fill=True, common_norm=False, alpha=.5, linewidth=0, palette="crest") 
+        
+        
+        ax[2].tick_params(axis='both', which='minor', labelsize=14)
+        ax[2].set(xlabel="Channel Time (s)")
+        sns.kdeplot(data=hist, x = 'channel_time', ax=ax[2], hue="pause", fill=True, common_norm=False, alpha=.5, linewidth=0, palette="crest") 
+             
+        plt.savefig("./algorithm/kde-v"+str(version)+"s.pdf")
         plt.clf()
   
 def RangePlot(df):
@@ -185,7 +234,6 @@ def SpyderPlot():
             ax.spines["start"].set_color("none")
             ax.spines["polar"].set_color("none")    
             
-
             ax.plot(angles, values, "o-", c=COLORS[counter],linewidth=2, label=str(version))
                 
             ax.set_xticks(angles[:-1])
@@ -215,49 +263,18 @@ def SpyderPlot():
         frameon=False     # don't put a frame
     )
     
-    
+    plt.title("Version stats")
+    plt.savefig("./algorithm/spyder_versions.pdf")
+    plt.clf()  
     plt.show()
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
- 
-     
-    # angles=np.linspace(0, 2*np.pi, len(labels), endpoint=False) 
-    
-    # stats=data.loc[0.1,labels].values  
-    # stats=np.concatenate((stats,[stats[0]]))
-    # angles=np.concatenate((angles,[angles[0]]))
-    
-    # print(angles)
-
-    
-    # fig=plt.figure()
-    # ax = fig.add_subplot(111, polar=True)
-    # ax.set_xticklabels(labels, size=12)
-    # ax.plot(angles, stats, 'o-', linewidth=2)
-    # ax.fill(angles, stats, alpha=0.25)
-    # ax.set_thetagrids(angles * 180/np.pi, labels)
-    # ax.set_title("assd")
-    # ax.grid(True)
-    # plt.show()
            
 matplotlib.style.use('ggplot')
 algorithm_data = pd.read_csv('../data/data-algorithm.csv')
 
 
-SpyderPlot()   
+# SpyderPlot()   
 # ErrorHistograms(algorithm_data)  
-# ErrorKde(algorithm_data) 
+ErrorKde(algorithm_data) 
 # RangePlot(algorithm_data)  
 # ErrorAreaHistogram(algorithm_data)   
