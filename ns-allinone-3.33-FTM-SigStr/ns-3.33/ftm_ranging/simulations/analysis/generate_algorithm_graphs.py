@@ -4,6 +4,7 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 import os
+import csv
 import json
 import matplotlib
 import pylab as pl
@@ -17,36 +18,6 @@ t1 = 0
 r0 = 0
 r1 = 0
 m = 0
-
-class Radar(object):
-    def __init__(self, fig, titles, labels, rect=None):
-        if rect is None:
-            rect = [0.05, 0.05, 0.95, 0.95]
-
-        self.n = len(titles)
-        self.angles = np.arange(90, 90+360, 360.0/self.n)
-        self.axes = [fig.add_axes(rect, projection="polar", label="axes%d" % i) 
-                         for i in range(self.n)]
-
-        self.ax = self.axes[0]
-        self.ax.set_thetagrids(self.angles, labels=titles, fontsize=14)
-
-        for ax in self.axes[1:]:
-            ax.patch.set_visible(False)
-            ax.grid("off")
-            ax.xaxis.set_visible(False)
-
-        for ax, angle, label in zip(self.axes, self.angles, labels):
-            ax.set_rgrids(range(1, 6), angle=angle, labels=label)
-            ax.spines["polar"].set_visible(False)
-            ax.set_ylim(0, 5)
-
-    def plot(self, values, *args, **kw):
-        angle = np.deg2rad(np.r_[self.angles, self.angles[0]])
-        values = np.r_[values, values[0]]
-        self.ax.plot(angle, values, *args, **kw)
-
-
 
 #real distance between two timestamps
 def f1(x):
@@ -73,39 +44,38 @@ def ErrorHistograms(df):
     plt.savefig("./algorithm/smooth-versions-error.pdf")
     plt.clf()
   
-def ErrorKde(df):  
+def Kde(df):  
     versions = df['version'].unique()
-    pause_times = df['pause'].unique()
-    
-    for version in versions:
-        hist = df.loc[(df.version == version)]
-        # hist['error_area_quantile'] = hist['error_area'].quantile(q=0.95)
-        print(hist['error_area'].quantile(q=0.95))
-        plt.title("Error / Channel Usage / Efficiency for version " + str(version), {
+    versions.sort()
+    axis_info = {
+        "metrics": ['error_area', 'channel_usage', 'channel_time'],
+        "labels": ['Error (m²)', 'Channel Usage (%)', 'Channel Time (s)'],
+        "x_ranges": [[-50,50], [-0.050, 0.125], [-0.005,0.015]],
+        # "y_ranges": [[0, 0.5], [0, 30], [0,2000]]
+    }
+    axis_count = 0
+    for metric in axis_info["metrics"]:
+        plt.title(metric, {
             'fontsize': 16,
             'fontweight' : 16,
             'verticalalignment': 'center',
             'horizontalalignment': 'center'
         })
-        fig, axes = plt.subplots(3, figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        fig, axes = plt.subplots(len(versions), figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
         ax = axes.ravel()
+        count = 0
+        for version in versions:
+            hist = df.loc[(df.version == version)]
 
-        ax[0].tick_params(axis='both', labelsize=14)
-        ax[0].set(xlabel="Error (m²)")
-        sns.kdeplot(data=hist.loc[df.error_area < hist['error_area'].quantile(q=0.95)], x = 'error_area', ax=ax[0], hue="pause", fill=True, common_norm=False, alpha=.5, linewidth=0, palette="crest") 
-        
-        
-        ax[1].tick_params(axis='both', which='minor', labelsize=14)
-        ax[1].set(xlabel="Channel Usage (%)")
-        sns.kdeplot(data=hist, x = 'channel_usage', ax=ax[1], hue="pause", fill=True, common_norm=False, alpha=.5, linewidth=0, palette="crest") 
-        
-        
-        ax[2].tick_params(axis='both', which='minor', labelsize=14)
-        ax[2].set(xlabel="Channel Time (s)")
-        sns.kdeplot(data=hist, x = 'channel_time', ax=ax[2], hue="pause", fill=True, common_norm=False, alpha=.5, linewidth=0, palette="crest") 
-             
-        plt.savefig("./algorithm/kde-v"+str(version)+"s.pdf")
+            ax[count].tick_params(axis='both', labelsize=15)
+            ax[count].set_xlabel(axis_info["labels"][axis_count], fontdict={'fontsize':24})
+            ax[count].set_xlim(axis_info["x_ranges"][axis_count])
+            # ax[count].set_ylim(axis_info["y_ranges"][axis_count])
+            sns.kdeplot(data=hist, x = metric, ax=ax[count], hue="pause", fill=True, common_norm=False, alpha=.5, linewidth=0.5, palette="crest") 
+            count += 1
+        plt.savefig("./algorithm/kde-" + metric + ".pdf")
         plt.clf()
+        axis_count += 1
   
 def RangePlot(df):
     versions = df['version'].unique()
@@ -155,30 +125,30 @@ def ErrorAreaHistogram(df):
                         
                     count += 1   
                     
-                error_area = pd.DataFrame({'error_area': error, 'channel_time': channel_time, 'channel_usage': channel_usage})
+                stat_data = pd.DataFrame({'error_area': error, 'channel_time': channel_time, 'channel_usage': channel_usage})
                     
-                data.append([version, pause, sum(error), sum(channel_time), sum(channel_usage), session_time, count, (sum(error)/len(error)), error_area['error_area'].std(), (sum(channel_time)/len(channel_time)), sum(channel_usage)/len(channel_usage),session_time/count, error_area['channel_time'].std()])       
+                data.append([version, pause, sum(stat_data['error_area']), sum(channel_time), sum(channel_usage), session_time, count, (sum(stat_data['error_area'])/len(stat_data['error_area'])), error_area['error_area'].std(), (sum(channel_time)/len(channel_time)), sum(channel_usage)/len(channel_usage),session_time/count, error_area['channel_time'].std()])       
                 error_csv = pd.DataFrame(data, columns=['version', 'pause', 'error', 'channel_time', 'channel_usage', 'session_time', 'measurements', 'measurement_error', 'std_deviation_error', 'measurement_channel_time', 'measurement_channel_usage', 'measurement_session_time', 'std_deviation_channel_time'])
                 error_csv.set_index(['version', 'pause'], inplace=True)    
                 error_csv.to_csv('./algorithm/error.csv')
                 
                 
-                error_area['error_area'].hist(density="True", edgecolor='black', grid=True, bins=80, alpha=0.5)
+                stat_data['error_area'].hist(density="True", edgecolor='black', grid=True, bins=80, alpha=0.5)
                 plt.title("Area of error measurements for version " + str(version) + " and pause " + str(int(pause)) + "s")
                 plt.savefig("./algorithm/error_area_hist_v" + str(version) + "-p" + str(int(pause)) + ".pdf")
                 plt.clf()  
                 
-                error_area['channel_time'].hist(density="True", edgecolor='black', grid=True, bins=80, alpha=0.5)
+                stat_data['channel_time'].hist(density="True", edgecolor='black', grid=True, bins=80, alpha=0.5)
                 plt.title("Channel time for version " + str(version) + " and pause " + str(int(pause)) + "s")
                 plt.savefig("./algorithm/channel_time_hist_v" + str(version) + "-p" + str(int(pause)) + ".pdf")
                 plt.clf()  
                 
-                sns.kdeplot(df.loc[(df['version']==version) & (df['pause']==pause), 'channel_usage'], label='v'+str(version))           
-                plt.title("Channel usage for version " + str(version) + " and pause " + str(int(pause)) + "s")
-                plt.savefig("./algorithm/channel_usage_kde_v" + str(version) + "-p" + str(int(pause)) + ".pdf")
+                sns.kdeplot(df.loc[(df['version']==version), 'channel_usage'], label='v'+str(version))           
+                plt.title("Channel usage for version " + str(version))
+                plt.savefig("./algorithm/channel_usage_kde_v" + str(version) + ".pdf")
                 plt.clf()  
                 
-                std = error_area['error_area'].std()
+                std = stat_data['error_area'].std()
                 std_error = []
                 for entry in error:
                     if abs(entry) < std:
@@ -224,7 +194,7 @@ def SpyderPlot():
         values=data.loc[(data.version == version),labels]
         if len(values) != 0:
             # values["measurement_error"] = values["measurement_error"].abs()
-            values = [values["measurement_session_time"].mean(), values["measurement_channel_usage"].mean(), values["measurement_channel_time"].mean(), values["measurement_error"].mean()]
+            values = [values["measurement_session_time"].mean(), values["measurement_channel_usage"].mean()*100, values["measurement_channel_time"].mean()*10000, values["measurement_error"].mean()]
             print(values)
             # close the radar plots
             angles = np.linspace(0, 2 * np.pi, N, endpoint=False)
@@ -234,7 +204,7 @@ def SpyderPlot():
             ax.spines["start"].set_color("none")
             ax.spines["polar"].set_color("none")    
             
-            ax.plot(angles, values, "o-", c=COLORS[counter],linewidth=2, label=str(version))
+            ax.plot(angles, values, marker="o", c=COLORS[counter],linewidth=1, label=str(version))
                 
             ax.set_xticks(angles[:-1])
             ax.set_xticklabels(labels, size=10)   
@@ -250,8 +220,8 @@ def SpyderPlot():
             c=color, 
             lw=3, 
             marker="o", 
-            markersize=8, 
-            label=version
+            markersize=2, 
+            label="v"+str(version)
         )
         for version, color in zip(versions, COLORS)
     ]   
@@ -266,15 +236,88 @@ def SpyderPlot():
     plt.title("Version stats")
     plt.savefig("./algorithm/spyder_versions.pdf")
     plt.clf()  
-    plt.show()
+   
+
+def WriteReport(df):
+    versions = df['version'].unique()
+    pause_times = df['pause'].unique()
+    data = []
+    csv_data_version = []
+    for version in versions:
+        error_area = []
+        error = []
+        channel_time = []
+        channel_usage = []
+        session_time = 0
+        hist = df.loc[(df.version == version)]
+        if len(hist) > 0:
+            count = 0
+            prev_index = hist.index[0]
+            for ind in hist.index:
+                # print(ind)
+                if count != 0:
+                    t0 = float(hist['ts'][prev_index])
+                    t1 = float(hist['ts'][ind])
+                    r0 = hist['real_distance'][prev_index]
+                    r1 = hist['real_distance'][ind]
+                    m = hist['meassured_distance'][prev_index] 
+                    error_area.append(quad(f1, t0, t1)[0] * ((r1-r0)/(t1-t0)) + quad(f2, t0, t1)[0] * (t1*r0 - t0*r1)/(t1-t0) - quad(g, t0, t1)[0] * m)
+                    channel_time.append(hist['channel_time'][ind])
+                    channel_usage.append(hist['channel_usage'][ind])
+                    error.append(hist['real_distance'][ind] - hist['meassured_distance'][ind])
+                    session_time += hist['session_time'][ind]
+                prev_index = ind    
+                    
+                count += 1
+                    
+                
+            stat_data = pd.DataFrame({
+                'error': error,
+                'error_area': error_area,
+                'channel_time': channel_time,
+                'channel_usage': channel_usage}
+            )
+            
+            csv_data = {
+                'version': version,
+                'error': sum(stat_data['error']),
+                'error_area': sum(stat_data['error_area']),
+                'channel_time': sum(channel_time),
+                'channel_usage': sum(channel_usage),
+                'session_time': session_time,
+                'measurements': len(hist),
+                'measurement_error': sum(stat_data['error'])/len(stat_data['error']),
+                'measurement_error_area': sum(stat_data['error_area'])/len(stat_data['error_area']),
+                'std_deviation_error': stat_data['error_area'].std(),
+                'measurement_channel_time': sum(channel_time)/len(channel_time),
+                'std_deviation_channel_time': stat_data['channel_time'].std(),
+                'measurement_channel_usage': sum(channel_usage)/len(channel_usage),
+                'measurement_session_time': session_time/len(hist),
+            }
+            
+            csv_data_version.append(csv_data)
+
+    with open ('./algorithm/error.csv', 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(csv_data_version[0].keys())
+        for version in csv_data_version:
+            writer.writerow(version.values())
+            
+            # f = open('./algorithm/error.csv', w)
+            # print(data['data'].shape)
+            # report = pd.DataFrame(data=data['data'], columns=data['fields'])
+            # report.set_index('version', inplace=True)    
+            # report.to_csv('./algorithm/error.csv')
+                
     
            
 matplotlib.style.use('ggplot')
 algorithm_data = pd.read_csv('../data/data-algorithm.csv')
 
 
+WriteReport(algorithm_data)
 # SpyderPlot()   
 # ErrorHistograms(algorithm_data)  
-ErrorKde(algorithm_data) 
+# Kde(algorithm_data) 
 # RangePlot(algorithm_data)  
 # ErrorAreaHistogram(algorithm_data)   
