@@ -41,16 +41,14 @@ with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
         if not file_is_empty(file):
             curr_measurement = np.loadtxt(file)
             ts = 0
-
             previous_measurement = curr_measurement[0]
-            for measurement in curr_measurement:
+            for measurement in curr_measurement:       
                 error_area = 0
                 t0 = ts
                 t1 = ts + abs(measurement[8])
-                print(previous_measurement)
-                r0 = previous_measurement[0]
-                r1 = measurement[0]
-                m = previous_measurement[1]
+                r0 = previous_measurement[5]
+                r1 = measurement[5]
+                m = int(previous_measurement[6]) / 2 / (10000 * 0.3)
                 error_area = quad(f1, t0, t1)[0] * ((r1-r0)/(t1-t0)) + quad(f2, t0, t1)[0] * (t1*r0 - t0*r1)/(t1-t0) - quad(g, t0, t1)[0] * m
                 value = int(measurement[6]) / 2 / (10000 * 0.3)
                 channel_usage = abs(float(measurement[9]/measurement[8])*100)
@@ -71,11 +69,19 @@ with open('./data-algorithm.csv', 'w+', newline='') as csvfile:
                     'velocity': measurement[10],
                     'x_position': measurement[11],
                     'y_position': measurement[12],
-                    'version': measurement[14] if "static-algorithm" not in file else 0,
+                    'version': measurement[14],
                     'ts': ts,
                     'pause': measurement[15],
                     'speed': measurement[16],
                 })
+                # if measurement[14] == 0.1:
+                #     print("t0: " + str(t0))
+                #     print("t1: " + str(t1))
+                #     print("r0: " + str(r0))
+                #     print("r1: " + str(r1))
+                #     print("m: " + str(m))
+                #     print("measurement[0]" + measurement)
+                #     print(error_area)
                 ts = t1
                 previous_measurement = measurement
         count += 1       
