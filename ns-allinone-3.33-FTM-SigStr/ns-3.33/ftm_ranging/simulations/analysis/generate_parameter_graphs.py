@@ -37,9 +37,9 @@ def errorHistograms(df):
                     hist['error'].hist(range=[-10,10], density="True", edgecolor='black', ax = ax[counter], grid=True, label="BP "+str(value), bins=80, alpha=0.5)            
             ax[counter].legend()
             ax[counter].set_xlim(-10, 10)
-            ax[counter].set_title('Error for ' + sim_type, fontsize = 15)
-            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
-            ax[counter].tick_params(axis='both', which='minor', labelsize=14)
+            ax[counter].set_title('Error for ' + sim_type, fontsize = 23)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=25)
+            ax[counter].tick_params(axis='both', which='minor', labelsize=25)
             ax[counter].set(xlabel="Error(m)", ylabel="Frequency(#)")
             
             counter = counter + 1
@@ -93,9 +93,17 @@ def channelEfficiencyHistograms(df):
         plt.clf()           
 
 circle_mean_data = pd.read_csv('../data/data-circle_mean.csv')    
-circle_velocity_data = pd.read_csv('../data/data-circle_velocity.csv')    
+circle_mean_data.insert(1, "simulation_type", ['circle_mean'] * len(circle_mean_data))
+
+circle_velocity_data = pd.read_csv('../data/data-circle_velocity.csv')
+circle_velocity_data.insert(1, "simulation_type", ['circle_velocity'] * len(circle_velocity_data))
+    
 fix_position_data = pd.read_csv('../data/data-fix_position.csv')    
+fix_position_data.insert(1, "simulation_type", ['fix_position'] * len(fix_position_data))
+
 brownian_data = pd.read_csv('../data/data-brownian.csv')   
+brownian_data.insert(1, "simulation_type", ['brownian'] * len(brownian_data))
+
 all_data = pd.concat([circle_mean_data, circle_velocity_data, fix_position_data, brownian_data]) #merge all data in a data frame
 
 
