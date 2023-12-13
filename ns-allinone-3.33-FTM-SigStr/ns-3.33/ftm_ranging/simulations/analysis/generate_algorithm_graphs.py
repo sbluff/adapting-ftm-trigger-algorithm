@@ -61,18 +61,20 @@ def Kde(df):
             'verticalalignment': 'center',
             'horizontalalignment': 'center'
         })
-        fig, axes = plt.subplots(len(versions), figsize = (20, 12)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        fig, axes = plt.subplots(len(versions), figsize = (20, 16)) # syntax is plt.subplots(nrows, ncols, figsize=(width, height))
+        fig.tight_layout(pad=5)
         ax = axes.ravel()
         count = 0
         for version in versions:
             hist = df.loc[(df.version == version)]
-
             ax[count].tick_params(axis='both', labelsize=15)
-            ax[count].set_xlabel(axis_info["labels"][axis_count], fontdict={'fontsize':24})
+            ax[count].set_xlabel(axis_info["labels"][axis_count], fontdict={'fontsize':20})
+            ax[count].set_ylabel("Density", fontdict={'fontsize':20})
             ax[count].set_xlim(axis_info["x_ranges"][axis_count])
-            # ax[count].set_ylim(axis_info["y_ranges"][axis_count])
+            ax[count].set_title('v' + str(version), fontsize=22)
             sns.kdeplot(data=hist, x = metric, ax=ax[count], hue="pause", fill=True, common_norm=False, alpha=.5, linewidth=0.5, palette="crest") 
             count += 1
+            
         plt.savefig("./algorithm/kde-" + metric + ".pdf")
         plt.clf()
         axis_count += 1
@@ -177,12 +179,10 @@ def SpyderPlot():
     
     data = pd.read_csv('./algorithm/error.csv')
     # data.set_index('version', inplace=True)
-    labels=np.array(['measurement_session_time', 'measurement_channel_usage', 'measurement_channel_time', 'measurement_error']) 
+    labels=np.array(['measurement_session_time', 'channel_time', 'channel_usage', 'error_area']) 
     N = len(labels)
     
     versions = data['version'].unique()
-    pauses = data['pause'].unique()
-    # print(versions)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, polar=True)
@@ -194,15 +194,15 @@ def SpyderPlot():
         values=data.loc[(data.version == version),labels]
         if len(values) != 0:
             # values["measurement_error"] = values["measurement_error"].abs()
-            values = [values["measurement_session_time"].mean(), values["measurement_channel_usage"].mean()*100, values["measurement_channel_time"].mean()*10000, values["measurement_error"].mean()]
+            values = [values["measurement_session_time"].mean()/100, values["channel_usage"].mean(), values["channel_time"].mean()/100, values["error_area"].mean()]
             print(values)
             # close the radar plots
             angles = np.linspace(0, 2 * np.pi, N, endpoint=False)
             values = np.concatenate((values, [values[0]]))
             angles = np.concatenate((angles, [angles[0]]))
             
-            ax.spines["start"].set_color("none")
-            ax.spines["polar"].set_color("none")    
+            # ax.spines["start"].set_color("none")
+            # ax.spines["polar"].set_color("none")    
             
             ax.plot(angles, values, marker="o", c=COLORS[counter],linewidth=1, label=str(version))
                 
@@ -237,7 +237,6 @@ def SpyderPlot():
     plt.savefig("./algorithm/spyder_versions.pdf")
     plt.clf()  
    
-
 def WriteReport(df):
     versions = df['version'].unique()
     pause_times = df['pause'].unique()
@@ -283,7 +282,7 @@ def WriteReport(df):
                 'error': sum(stat_data['error']),
                 'error_area': sum(stat_data['error_area']),
                 'channel_time': sum(channel_time),
-                'channel_usage': sum(channel_usage),
+                'channel_usage': sum(channel_usage)/len(channel_usage),
                 'session_time': session_time,
                 'measurements': len(hist),
                 'measurement_error': sum(stat_data['error'])/len(stat_data['error']),
@@ -315,9 +314,9 @@ matplotlib.style.use('ggplot')
 algorithm_data = pd.read_csv('../data/data-algorithm.csv')
 
 
-WriteReport(algorithm_data)
+# WriteReport(algorithm_data)
 # SpyderPlot()   
 # ErrorHistograms(algorithm_data)  
-# Kde(algorithm_data) 
+Kde(algorithm_data) 
 # RangePlot(algorithm_data)  
 # ErrorAreaHistogram(algorithm_data)   
