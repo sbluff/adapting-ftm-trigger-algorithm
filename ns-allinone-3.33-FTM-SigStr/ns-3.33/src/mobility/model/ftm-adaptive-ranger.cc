@@ -249,17 +249,6 @@ void FtmAdaptiveRanger::LoadStatisticalVariables()
         std_deviation = 0;
         for (unsigned i = 0; i < (*data)[3].second.size(); i++)
         {
-            // same_configuration = (*data)[3].second[i] ==
-            // double(parameters.GetMinDeltaFtm()) && (*data)[4].second[i] ==
-            // double(parameters.GetBurstPeriod()) && (*data)[5].second[i] ==
-            // double(parameters.GetNumberOfBurstsExponent()) && (*data)[6].second[i] ==
-            // double(parameters.GetBurstDuration()) && (*data)[7].second[i] ==
-            // double(parameters.GetFtmsPerBurst()) ; same_configuration =
-            // (*data)[3].second[i] == double(parameters.GetMinDeltaFtm()) &&
-            // (*data)[4].second[i] == double(parameters.GetBurstPeriod()) &&
-            // (*data)[5].second[i] == double(parameters.GetNumberOfBurstsExponent()) &&
-            // (*data)[6].second[i] == double(parameters.GetBurstDuration()) &&
-            // (*data)[7].second[i] == double(parameters.GetFtmsPerBurst()) ;
             same_configuration =
                 (*data)[3].second[i] == double(parameters.GetMinDeltaFtm()) &&
                 (*data)[4].second[i] == double(parameters.GetBurstPeriod()) &&
@@ -294,11 +283,22 @@ void FtmAdaptiveRanger::LoadStatisticalVariables()
 // sets the values for the ftm parameters running under the brownian state
 void FtmAdaptiveRanger::SetBrownianParameters()
 {
-    parameters.SetMinDeltaFtm(15);
-    parameters.SetNumberOfBurstsExponent(1);
-    parameters.SetFtmsPerBurst(4);
-    parameters.SetBurstDuration(7);
-    parameters.SetBurstPeriod(7);
+    if (version == 0.1)
+    {
+        parameters.SetMinDeltaFtm(15);
+        parameters.SetNumberOfBurstsExponent(4);
+        parameters.SetFtmsPerBurst(4);
+        parameters.SetBurstDuration(10);
+        parameters.SetBurstPeriod(10);
+    }
+    else
+    {
+        parameters.SetMinDeltaFtm(15);
+        parameters.SetNumberOfBurstsExponent(1);
+        parameters.SetFtmsPerBurst(4);
+        parameters.SetBurstDuration(7);
+        parameters.SetBurstPeriod(7);
+    }
 }
 
 // sets the values for the ftm parameters running under the fix_position state
@@ -310,6 +310,14 @@ void FtmAdaptiveRanger::SetFixPositionParameters()
         parameters.SetBurstDuration(7);
         parameters.SetNumberOfBurstsExponent(1);
         parameters.SetBurstPeriod(7);
+        parameters.SetFtmsPerBurst(4);
+    }
+
+    else if (version == 0.1)
+    {
+        parameters.SetBurstDuration(10);
+        parameters.SetNumberOfBurstsExponent(4);
+        parameters.SetBurstPeriod(10);
         parameters.SetFtmsPerBurst(4);
     }
 
@@ -344,13 +352,11 @@ void FtmAdaptiveRanger::Analysis()
 {
     bool config_change = false;
     std::string new_state = state;
-    // there has been a change in the expected RTT
     if (hist_rtt.size() > 2)
     {
         double rtt_change_percentage = abs(hist_rtt[0].second - hist_rtt[1].second) / hist_rtt[1].second;
-        std::cout << "rtt_change_percentage: " << rtt_change_percentage << " std_deviation: " << std_deviation << std::endl;
         if (rtt_change_percentage > std_deviation)
-        { // movement perceived
+        { // node IS moving
             if (!transition)
                 HandleTransitionBrownian(new_state, config_change);
             else if (state == "fix_position")
@@ -358,7 +364,7 @@ void FtmAdaptiveRanger::Analysis()
         }
 
         else
-        { // movement was not perceived
+        { // node is NOT moving
             if (!transition && state == "brownian")
                 transition = !transition;
 
